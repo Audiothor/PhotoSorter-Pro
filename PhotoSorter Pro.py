@@ -9,6 +9,7 @@ from tkinter import filedialog, messagebox
 import speech_recognition as sr
 import threading
 import urllib.request
+import webbrowser
 
 # Configuration globale du design
 ctk.set_appearance_mode("Dark")
@@ -17,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.6.1"
+        self.version = "v1.7.0"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -94,6 +95,10 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_mic = ctk.CTkButton(self.sidebar, text="🎙 Activer la Voix", fg_color="#8e44ad", hover_color="#9b59b6", command=self.toggle_voice)
         self.btn_mic.grid(row=10, column=0, padx=20, pady=10)
 
+        # Aide
+        self.btn_help = ctk.CTkButton(self.sidebar, text="📖 Aide (README)", fg_color="#2980b9", hover_color="#3498db", command=lambda: webbrowser.open("https://github.com/Audiothor/PhotoSorter-Pro#readme"))
+        self.btn_help.grid(row=11, column=0, padx=20, pady=10)
+
         # Quitter
         self.btn_exit = ctk.CTkButton(self.sidebar, text="❌ Quitter", fg_color="#34495e", hover_color="#c0392b", command=self.destroy)
         self.btn_exit.grid(row=12, column=0, padx=20, pady=(20, 5), sticky="s")
@@ -116,9 +121,10 @@ class ModernPhotoSorter(ctk.CTk):
                 def parse_v(v): return tuple(map(int, v.strip('v').split('.')))
                 
                 if parse_v(remote_version) > parse_v(self.version):
-                    self.after(0, lambda: self.lbl_version.configure(
-                        text=f"🚀 Màj disponible : {remote_version} !", text_color="#2ecc71"
-                    ))
+                    def update_ui_available():
+                        self.lbl_version.configure(text=f"🚀 Màj disponible : {remote_version} !", text_color="#2ecc71", cursor="hand2")
+                        self.lbl_version.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/Audiothor/PhotoSorter-Pro"))
+                    self.after(0, update_ui_available)
                 else:
                     self.after(0, lambda: self.lbl_version.configure(
                         text=f"À jour ({self.version})", text_color="gray"
