@@ -8,6 +8,7 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 import speech_recognition as sr
 import threading
+import urllib.request
 
 # Configuration globale du design
 ctk.set_appearance_mode("Dark")
@@ -38,6 +39,9 @@ class ModernPhotoSorter(ctk.CTk):
 
         self._setup_ui()
         self._bind_shortcuts()
+        
+        # Vérification des mises à jour en arrière-plan
+        threading.Thread(target=self.check_for_updates, daemon=True).start()
 
     def _setup_ui(self):
         self.grid_columnconfigure(1, weight=1)
@@ -46,7 +50,7 @@ class ModernPhotoSorter(ctk.CTk):
         # --- Panneau Latéral Gauche ---
         self.sidebar = ctk.CTkFrame(self, width=280, corner_radius=0)
         self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
-        self.sidebar.grid_rowconfigure(12, weight=1)
+        self.sidebar.grid_rowconfigure(11, weight=1)
 
         ctk.CTkLabel(self.sidebar, text="Configuration", font=ctk.CTkFont(size=20, weight="bold")).grid(row=0, column=0, padx=20, pady=(20, 10))
         
@@ -92,7 +96,34 @@ class ModernPhotoSorter(ctk.CTk):
 
         # Quitter
         self.btn_exit = ctk.CTkButton(self.sidebar, text="❌ Quitter", fg_color="#34495e", hover_color="#c0392b", command=self.destroy)
-        self.btn_exit.grid(row=12, column=0, padx=20, pady=20, sticky="s")
+        self.btn_exit.grid(row=12, column=0, padx=20, pady=(20, 5), sticky="s")
+
+        # Label de version
+        self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"Version {self.version} (Vérification...)", font=ctk.CTkFont(size=10), text_color="gray")
+        self.lbl_version.grid(row=13, column=0, padx=20, pady=(0, 10), sticky="s")
+
+    def check_for_updates(self):
+        try:
+            url = "https://raw.githubusercontent.com/Audiothor/PhotoSorter-Pro/main/PhotoSorter%20Pro.py"
+            req = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                content = response.read().decode('utf-8')
+                
+            match = re.search(r'self\.version\s*=\s*["\'](v[^"\']+)["\']', content)
+            if match:
+                remote_version = match.group(1)
+                if remote_version != self.version:
+                    self.after(0, lambda: self.lbl_version.configure(
+                        text=f"🚀 Màj disponible : {remote_version} !", text_color="#2ecc71"
+                    ))
+                else:
+                    self.after(0, lambda: self.lbl_version.configure(
+                        text=f"À jour ({self.version})", text_color="gray"
+                    ))
+            else:
+                self.after(0, lambda: self.lbl_version.configure(text=f"Version {self.version}", text_color="gray"))
+        except Exception:
+            self.after(0, lambda: self.lbl_version.configure(text=f"Version {self.version} (Hors ligne)", text_color="gray"))
 
         # --- Zone Centrale ---
         self.main_frame = ctk.CTkFrame(self, corner_radius=10)
