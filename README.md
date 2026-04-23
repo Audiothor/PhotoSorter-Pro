@@ -33,7 +33,8 @@ PhotoSorter Pro (v5) est développé avec une architecture claire séparant l'UI
 ## 🚀 Installation & Prérequis
 
 ### 1. Prérequis
-**Python 3.8+** doit être installé. *(Sur Windows, n'oubliez pas de cocher "Add Python to PATH" lors de l'installation de Python).*
+*   **Python 3.8+** doit être installé. *(Sur Windows, n'oubliez pas de cocher "Add Python to PATH" lors de l'installation de Python).*
+*   **Git** doit être installé pour pouvoir récupérer le projet.
 
 ### 2. Cloner le dépôt
 ```bash
