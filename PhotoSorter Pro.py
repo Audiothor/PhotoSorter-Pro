@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.9.6"
+        self.version = "v1.9.7"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -63,10 +63,10 @@ class ModernPhotoSorter(ctk.CTk):
         self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
         self.sidebar.grid_rowconfigure(11, weight=1)
 
-        # --- En-tête Sidebar (Style Illustration Finale - Largeur Réduite) ---
-        self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="#1f3d6a", corner_radius=20, width=160, height=80)
-        self.header_frame.grid(row=0, column=0, sticky="", padx=60, pady=20)
-        self.header_frame.grid_propagate(False) # Empêche le cadre de s'agrandir selon le texte
+        # --- En-tête Sidebar (Style Illustration Finale - Compact) ---
+        self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="#1f3d6a", corner_radius=15, width=190, height=65)
+        self.header_frame.grid(row=0, column=0, sticky="", padx=45, pady=20)
+        self.header_frame.grid_propagate(False) # Empêche le cadre de s'agrandir
         
         try:
             from PIL import Image
@@ -80,9 +80,9 @@ class ModernPhotoSorter(ctk.CTk):
         except Exception:
             self.lbl_title = ctk.CTkLabel(self.header_frame, text="📸 PhotoSorter Pro", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
             
-        self.lbl_title.pack(pady=(15, 2), padx=5, expand=True)
-        self.lbl_subtitle = ctk.CTkLabel(self.header_frame, text=f"Version {self.version.lstrip('v')}", font=ctk.CTkFont(size=11), text_color="#a9cce3")
-        self.lbl_subtitle.pack(pady=(0, 15), padx=5, expand=True)
+        self.lbl_title.pack(pady=(8, 0), padx=5, expand=True)
+        self.lbl_subtitle = ctk.CTkLabel(self.header_frame, text=f"Version {self.version.lstrip('v')}", font=ctk.CTkFont(size=10), text_color="#a9cce3")
+        self.lbl_subtitle.pack(pady=(0, 8), padx=5, expand=True)
         
         # Source
         self.btn_src = ctk.CTkButton(self.sidebar, text="📁 Choisir Source", command=self.load_source)
