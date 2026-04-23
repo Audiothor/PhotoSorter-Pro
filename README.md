@@ -87,6 +87,36 @@ Cliquez sur **🎙 Activer la Voix** pour basculer en mode écoute continue.
 
 ---
 
+## 📁 Organisation Automatique des Fichiers
+
+L'un des atouts majeurs de PhotoSorter Pro est la façon dont il structure automatiquement vos fichiers pour garantir un rangement propre et chronologique.
+
+### Dans votre dossier "Source"
+Le dossier contenant vos photos en vrac est préservé. Le programme déplace simplement les images traitées dans deux sous-dossiers générés automatiquement :
+*   📂 `_archive_traitee/` : Contient les photos originales que vous avez choisi de **garder** et classer. Elles sont archivées ici par sécurité.
+*   📂 `_corbeille_tri/` : Contient les photos que vous avez choisi de **supprimer**. C'est une "poubelle" locale que vous pourrez vider vous-même plus tard.
+
+### Dans votre dossier "Destination"
+C'est ici que votre nouvelle bibliothèque photo se construit. Le programme crée une arborescence basée sur l'année de prise de vue et l'événement.
+
+L'arborescence finale générée ressemble à ceci :
+```text
+📂 [Votre Dossier Destination]
+ ┣ 📂 2023
+ ┃  ┣ 📂 2023-01-01 Nouvel An
+ ┃  ┃  ┗ 🖼️ IMG-20230101-WA0001.jpg
+ ┃  ┗ 📂 2023-05-14 Week-end Normandie
+ ┃     ┣ 🖼️ DSC001.jpg
+ ┃     ┗ 🖼️ DSC002.jpg
+ ┗ 📂 2024
+    ┗ 📂 2024-10-26 Soirée Jeux
+       ┗ 🖼️ photo_1.png
+```
+*   **Dossier Année (`YYYY`) :** Généré automatiquement selon la date exacte de la photo.
+*   **Dossier Événement (`YYYY-MM-DD [Libellé]`) :** Créé dans le dossier de l'année. Il regroupe les photos du jour sous le nom de l'événement que vous avez dicté ou tapé. Si plusieurs photos ont la même date, elles iront automatiquement dans le dossier déjà existant pour cette journée.
+
+---
+
 ## 🧠 Sous le capot (Workflow Technique)
 
 1. **Extraction de Date (`get_safe_date`) :** Protocole à 3 niveaux.
