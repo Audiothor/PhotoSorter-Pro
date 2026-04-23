@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.8.1"
+        self.version = "v1.9.0"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -54,7 +54,13 @@ class ModernPhotoSorter(ctk.CTk):
         self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
         self.sidebar.grid_rowconfigure(11, weight=1)
 
-        ctk.CTkLabel(self.sidebar, text="Configuration", font=ctk.CTkFont(size=20, weight="bold")).grid(row=0, column=0, padx=20, pady=(20, 10))
+        # --- En-tête Sidebar (Style Moderne) ---
+        self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="#1f538d", corner_radius=0)
+        self.header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        self.lbl_title = ctk.CTkLabel(self.header_frame, text="📸 PhotoSorter Pro", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
+        self.lbl_title.pack(pady=(20, 5), padx=20, anchor="w")
+        self.lbl_subtitle = ctk.CTkLabel(self.header_frame, text=f"Version {self.version.lstrip('v')}", font=ctk.CTkFont(size=12), text_color="#a9cce3")
+        self.lbl_subtitle.pack(pady=(0, 20), padx=20, anchor="w")
         
         # Source
         self.btn_src = ctk.CTkButton(self.sidebar, text="📁 Choisir Source", command=self.load_source)
