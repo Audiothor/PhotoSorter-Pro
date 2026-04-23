@@ -21,7 +21,7 @@ Une application de bureau Python moderne et interactive pour trier, organiser et
 
 ## ⚙️ Architecture Technique & Dépendances
 
-PhotoSorter Pro (v1.9.4) est développé avec une architecture claire séparant l'UI, le traitement d'image, et le thread d'écoute vocale :
+PhotoSorter Pro (v1.9.5) est développé avec une architecture claire séparant l'UI, le traitement d'image, et le thread d'écoute vocale :
 
 *   **UI/Framework :** `customtkinter` (Interface utilisateur moderne et responsive).
 *   **Moteur d'Image :** `Pillow` (PIL) pour le redimensionnement dynamique (`min(ratio_w, ratio_h)`) sans distorsion, et `ImageOps` pour la gestion native de l'orientation.

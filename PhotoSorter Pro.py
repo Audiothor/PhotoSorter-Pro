@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.9.4"
+        self.version = "v1.9.5"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -79,9 +79,9 @@ class ModernPhotoSorter(ctk.CTk):
         except Exception:
             self.lbl_title = ctk.CTkLabel(self.header_frame, text="📸 PhotoSorter Pro", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
             
-        self.lbl_title.pack(pady=(15, 2), padx=20)
+        self.lbl_title.pack(pady=(15, 2), padx=5)
         self.lbl_subtitle = ctk.CTkLabel(self.header_frame, text=f"Version {self.version.lstrip('v')}", font=ctk.CTkFont(size=11), text_color="#a9cce3")
-        self.lbl_subtitle.pack(pady=(0, 15), padx=20)
+        self.lbl_subtitle.pack(pady=(0, 15), padx=5)
         
         # Source
         self.btn_src = ctk.CTkButton(self.sidebar, text="📁 Choisir Source", command=self.load_source)
