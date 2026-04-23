@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.9.1"
+        self.version = "v1.9.2"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -63,25 +63,26 @@ class ModernPhotoSorter(ctk.CTk):
         self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
         self.sidebar.grid_rowconfigure(11, weight=1)
 
-        # --- En-tête Sidebar (Style Moderne) ---
-        self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="#1f538d", corner_radius=0)
-        self.header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        # --- En-tête Sidebar (Style Moderne - Rectifié) ---
+        self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="#1f538d", corner_radius=15)
+        self.header_frame.grid(row=0, column=0, sticky="ew", padx=15, pady=15)
         
         try:
             from PIL import Image
             import os
             icon_path = os.path.join(os.path.dirname(__file__), "assets", "app_icon.png")
             if os.path.exists(icon_path):
-                self.title_icon = ctk.CTkImage(light_image=Image.open(icon_path), dark_image=Image.open(icon_path), size=(30, 30))
-                self.lbl_title = ctk.CTkLabel(self.header_frame, text=" PhotoSorter Pro", image=self.title_icon, compound="left", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
+                # Taille augmentée pour mieux voir l'icone de l'illustration
+                self.title_icon = ctk.CTkImage(light_image=Image.open(icon_path), dark_image=Image.open(icon_path), size=(40, 40))
+                self.lbl_title = ctk.CTkLabel(self.header_frame, text=" PhotoSorter Pro", image=self.title_icon, compound="left", font=ctk.CTkFont(size=16, weight="bold"), text_color="white")
             else:
-                self.lbl_title = ctk.CTkLabel(self.header_frame, text="📸 PhotoSorter Pro", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
+                self.lbl_title = ctk.CTkLabel(self.header_frame, text="📸 PhotoSorter Pro", font=ctk.CTkFont(size=16, weight="bold"), text_color="white")
         except Exception:
-            self.lbl_title = ctk.CTkLabel(self.header_frame, text="📸 PhotoSorter Pro", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
+            self.lbl_title = ctk.CTkLabel(self.header_frame, text="📸 PhotoSorter Pro", font=ctk.CTkFont(size=16, weight="bold"), text_color="white")
             
-        self.lbl_title.pack(pady=(20, 5), padx=20, anchor="w")
-        self.lbl_subtitle = ctk.CTkLabel(self.header_frame, text=f"Version {self.version.lstrip('v')}", font=ctk.CTkFont(size=12), text_color="#a9cce3")
-        self.lbl_subtitle.pack(pady=(0, 20), padx=20, anchor="w")
+        self.lbl_title.pack(pady=(15, 2), padx=15, anchor="w")
+        self.lbl_subtitle = ctk.CTkLabel(self.header_frame, text=f"Version {self.version.lstrip('v')}", font=ctk.CTkFont(size=11), text_color="#a9cce3")
+        self.lbl_subtitle.pack(pady=(0, 15), padx=15, anchor="w")
         
         # Source
         self.btn_src = ctk.CTkButton(self.sidebar, text="📁 Choisir Source", command=self.load_source)
