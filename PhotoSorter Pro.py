@@ -17,7 +17,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.6"
+        self.version = "v1.6.1"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
