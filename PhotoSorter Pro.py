@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.9.2"
+        self.version = "v1.9.3"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -65,15 +65,15 @@ class ModernPhotoSorter(ctk.CTk):
 
         # --- En-tête Sidebar (Style Moderne - Rectifié) ---
         self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="#1f538d", corner_radius=15)
-        self.header_frame.grid(row=0, column=0, sticky="ew", padx=15, pady=15)
+        self.header_frame.grid(row=0, column=0, sticky="ew", padx=40, pady=15)
         
         try:
             from PIL import Image
             import os
             icon_path = os.path.join(os.path.dirname(__file__), "assets", "app_icon.png")
             if os.path.exists(icon_path):
-                # Taille augmentée pour mieux voir l'icone de l'illustration
-                self.title_icon = ctk.CTkImage(light_image=Image.open(icon_path), dark_image=Image.open(icon_path), size=(40, 40))
+                # Taille augmentée pour l'icone
+                self.title_icon = ctk.CTkImage(light_image=Image.open(icon_path), dark_image=Image.open(icon_path), size=(50, 50))
                 self.lbl_title = ctk.CTkLabel(self.header_frame, text=" PhotoSorter Pro", image=self.title_icon, compound="left", font=ctk.CTkFont(size=16, weight="bold"), text_color="white")
             else:
                 self.lbl_title = ctk.CTkLabel(self.header_frame, text="📸 PhotoSorter Pro", font=ctk.CTkFont(size=16, weight="bold"), text_color="white")
