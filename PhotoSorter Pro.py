@@ -104,7 +104,7 @@ class ModernPhotoSorter(ctk.CTk):
 
     def check_for_updates(self):
         try:
-            url = "https://raw.githubusercontent.com/Audiothor/PhotoSorter-Pro/main/PhotoSorter%20Pro.py"
+            url = f"https://raw.githubusercontent.com/Audiothor/PhotoSorter-Pro/main/PhotoSorter%20Pro.py?t={int(datetime.now().timestamp())}"
             req = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
             with urllib.request.urlopen(req, timeout=5) as response:
                 content = response.read().decode('utf-8')
@@ -112,7 +112,10 @@ class ModernPhotoSorter(ctk.CTk):
             match = re.search(r'self\.version\s*=\s*["\'](v[^"\']+)["\']', content)
             if match:
                 remote_version = match.group(1)
-                if remote_version != self.version:
+                
+                def parse_v(v): return tuple(map(int, v.strip('v').split('.')))
+                
+                if parse_v(remote_version) > parse_v(self.version):
                     self.after(0, lambda: self.lbl_version.configure(
                         text=f"🚀 Màj disponible : {remote_version} !", text_color="#2ecc71"
                     ))
