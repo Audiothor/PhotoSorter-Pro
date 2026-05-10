@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.9.11"
+        self.version = "v1.9.12"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -299,6 +299,8 @@ class ModernPhotoSorter(ctk.CTk):
 
     def show_label_prompt(self):
         self.awaiting_label = True
+        self.lbl_current_event.configure(text="En attente de libellé...", text_color="#e74c3c")
+        self.btn_rename.grid_forget()
         self.lbl_prompt.configure(text="NOUVEAU DOSSIER !\nNommez l'événement :")
         self.frame_label.grid(row=7, column=0, padx=10, pady=10, sticky="ew")
         self.entry_label.delete(0, 'end')
