@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.10.1"
+        self.version = "v1.10.2"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -197,6 +197,7 @@ class ModernPhotoSorter(ctk.CTk):
             "----------------------------------\n"
             "➡ Flèche Droite / Entrée : Garder\n"
             "✖ Suppr : Mettre à la corbeille\n"
+            "⏩ Échap : Passer à la suivante\n"
             "🔄 Espace : Rotation (90°)\n"
             "↩ Ctrl + Z : Annuler la dernière action\n\n"
             "🎙 COMMANDES VOCALES :\n"
@@ -212,6 +213,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.bind("<Right>", lambda event: self._on_shortcut("save"))
         self.bind("<Return>", lambda event: self._on_shortcut("save"))
         self.bind("<Delete>", lambda event: self._on_shortcut("trash"))
+        self.bind("<Escape>", lambda event: self._on_shortcut("skip"))
         self.bind("<space>", lambda event: self._on_shortcut("rotate"))
         self.bind("<Control-z>", lambda event: self._on_shortcut("undo"))
 
@@ -219,6 +221,7 @@ class ModernPhotoSorter(ctk.CTk):
         if self.awaiting_label: return # Ignorer si on tape un texte
         if action == "save": self.process_photo("save")
         elif action == "trash": self.process_photo("trash")
+        elif action == "skip": self.next_photo()
         elif action == "rotate": self.do_rotate()
         elif action == "undo": self.undo_last()
 
