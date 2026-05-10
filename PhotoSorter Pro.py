@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.9.10"
+        self.version = "v1.9.11"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -187,10 +187,17 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_save.grid(row=0, column=2, padx=20, pady=20)
 
     def _bind_shortcuts(self):
-        self.bind("<Right>", lambda event: self.process_photo("save"))
-        self.bind("<Delete>", lambda event: self.process_photo("trash"))
-        self.bind("<space>", lambda event: self.do_rotate())
-        self.bind("<Control-z>", lambda event: self.undo_last())
+        self.bind("<Right>", lambda event: self._on_shortcut("save"))
+        self.bind("<Delete>", lambda event: self._on_shortcut("trash"))
+        self.bind("<space>", lambda event: self._on_shortcut("rotate"))
+        self.bind("<Control-z>", lambda event: self._on_shortcut("undo"))
+
+    def _on_shortcut(self, action):
+        if self.awaiting_label: return # Ignorer si on tape un texte
+        if action == "save": self.process_photo("save")
+        elif action == "trash": self.process_photo("trash")
+        elif action == "rotate": self.do_rotate()
+        elif action == "undo": self.undo_last()
 
     def do_rotate(self):
         self.rotation = (self.rotation - 90) % 360
