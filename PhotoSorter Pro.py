@@ -2,14 +2,17 @@ import os
 import shutil
 import piexif
 import re
+import hashlib
+import json
+import threading
+import time
+import urllib.request
+import webbrowser
 from datetime import datetime
 from PIL import Image, ImageOps
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 import speech_recognition as sr
-import threading
-import urllib.request
-import webbrowser
 
 # Configuration globale du design
 ctk.set_appearance_mode("Dark")
@@ -18,7 +21,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.10.2"
+        self.version = "v1.11.0"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -45,9 +48,16 @@ class ModernPhotoSorter(ctk.CTk):
         self.temp_save_data = None
 
         # Variables Vocales
+        # Variables Vocales
         self.is_listening = False
         self.recognizer = sr.Recognizer()
-        self.recognizer.pause_threshold = 0.5  # Plus réactif pour les mots courts
+        self.recognizer.pause_threshold = 0.5
+
+        # Variables Doublons
+        self.checksum_db = {} # md5 -> path
+        self.index_file = ""
+        self.scan_thread = None
+        self.is_scanning = False
 
         self._setup_ui()
         self._bind_shortcuts()
@@ -146,6 +156,10 @@ class ModernPhotoSorter(ctk.CTk):
         self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"Version {self.version} (Vérification...)", font=ctk.CTkFont(size=10), text_color="gray")
         self.lbl_version.grid(row=15, column=0, padx=20, pady=(0, 10), sticky="s")
 
+        # Overlay Doublon (initialement masqué)
+        self.lbl_dup_warning = ctk.CTkLabel(self.main_content, text="⚠️ DOUBLON DÉTECTÉ !", fg_color="#c0392b", text_color="white", font=ctk.CTkFont(size=16, weight="bold"), corner_radius=10)
+        # Il sera affiché dynamiquement par show_current
+        
     def check_for_updates(self):
         try:
             url = f"https://raw.githubusercontent.com/Audiothor/PhotoSorter-Pro/main/PhotoSorter%20Pro.py?t={int(datetime.now().timestamp())}"
@@ -275,7 +289,59 @@ class ModernPhotoSorter(ctk.CTk):
             except: pass
         return datetime.fromtimestamp(os.path.getctime(path))
 
+    def calculate_md5(self, file_path):
+        """Calcule l'empreinte MD5 d'un fichier."""
+        hash_md5 = hashlib.md5()
+        try:
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return hash_md5.hexdigest()
+        except: return None
+
+    def load_index(self):
+        """Charge l'index des doublons."""
+        self.index_file = os.path.join(self.dest_dir, ".photosorter_index.json")
+        if os.path.exists(self.index_file):
+            try:
+                with open(self.index_file, "r", encoding="utf-8") as f:
+                    self.checksum_db = json.load(f)
+            except: self.checksum_db = {}
+        else: self.checksum_db = {}
+
+    def save_index(self):
+        """Sauvegarde l'index des doublons."""
+        if not self.dest_dir or not self.index_file: return
+        try:
+            with open(self.index_file, "w", encoding="utf-8") as f:
+                json.dump(self.checksum_db, f, ensure_ascii=False, indent=2)
+        except: pass
+
+    def start_background_scan(self):
+        """Lance le scan de la destination en arrière-plan."""
+        if self.is_scanning: return
+        self.is_scanning = True
+        self.scan_thread = threading.Thread(target=self._scan_worker, daemon=True)
+        self.scan_thread.start()
+
+    def _scan_worker(self):
+        """Parcourt la destination pour indexer les fichiers existants."""
+        extensions = ('.jpg', '.jpeg', '.png', '.mp4', '.mov')
+        for root, dirs, files in os.walk(self.dest_dir):
+            for file in files:
+                if file.lower().endswith(extensions):
+                    full_path = os.path.join(root, file)
+                    try:
+                        md5 = self.calculate_md5(full_path)
+                        if md5: self.checksum_db[md5] = full_path
+                    except: continue
+            self.save_index()
+            time.sleep(0.01)
+        self.is_scanning = False
+        self.save_index()
+
     def show_current(self):
+        self.lbl_dup_warning.place_forget() # Reset warning
         if self.idx < len(self.photos):
             self.update_ui_state()
             p = os.path.join(self.source_dir, self.photos[self.idx])
@@ -283,6 +349,14 @@ class ModernPhotoSorter(ctk.CTk):
             if not os.path.exists(p):
                 self.image_label.configure(image=None, text=f"⚠ Fichier introuvable :\n{self.photos[self.idx]}\n(Déplacé ou supprimé ?)")
                 return
+
+            # Vérification de doublon par MD5
+            current_md5 = self.calculate_md5(p)
+            if current_md5 in self.checksum_db:
+                found_path = self.checksum_db[current_md5]
+                folder_hint = os.path.basename(os.path.dirname(found_path))
+                self.lbl_dup_warning.configure(text=f"⚠️ DOUBLON DÉTECTÉ !\n(Déjà dans : {folder_hint})")
+                self.lbl_dup_warning.place(relx=0.5, rely=0.1, anchor="center")
 
             try:
                 with Image.open(p) as img:
@@ -419,27 +493,40 @@ class ModernPhotoSorter(ctk.CTk):
 
         filename = os.path.basename(src_path)
         dest_path = os.path.join(target_folder, filename)
+        
+        # Gestion des conflits de noms
+        final_dest = dest_path
         counter = 1
         name, ext = os.path.splitext(filename)
-        while os.path.exists(dest_path):
-            dest_path = os.path.join(target_folder, f"{name}_{counter}{ext}")
+        while os.path.exists(final_dest):
+            final_dest = os.path.join(target_folder, f"{name}_{counter}{ext}")
             counter += 1
-
-        with Image.open(src_path) as img:
-            img = ImageOps.exif_transpose(img)
-            if self.rotation != 0: img = img.rotate(self.rotation, expand=True)
-            try:
-                exif_bytes = piexif.dump(piexif.load(src_path))
-                img.save(dest_path, quality=95, exif=exif_bytes)
-            except: img.save(dest_path, quality=95)
+            
+        try:
+            with Image.open(src_path) as img:
+                img = ImageOps.exif_transpose(img)
+                if self.rotation != 0: img = img.rotate(self.rotation, expand=True)
+                try:
+                    exif_bytes = piexif.dump(piexif.load(src_path))
+                    img.save(final_dest, quality=95, exif=exif_bytes)
+                except: img.save(final_dest, quality=95)
+        except:
+            shutil.copy2(src_path, final_dest)
 
         stat = os.stat(src_path)
-        os.utime(dest_path, (stat.st_atime, stat.st_mtime))
+        os.utime(final_dest, (stat.st_atime, stat.st_mtime))
+        
+        # Mémoriser dans l'index
+        md5 = self.calculate_md5(final_dest)
+        if md5: 
+            self.checksum_db[md5] = final_dest
+            self.save_index()
+
         archive_dir = os.path.join(self.source_dir, "_archive_traitee")
         os.makedirs(archive_dir, exist_ok=True)
         arch_path = os.path.join(archive_dir, filename)
         shutil.move(src_path, arch_path)
-        self.history.append({"action": "save", "src": src_path, "dest": dest_path, "arch": arch_path})
+        self.history.append({"action": "save", "src": src_path, "dest": final_dest, "arch": arch_path})
         self.next_photo()
 
     def finalize_trash(self, src_path):
@@ -490,9 +577,11 @@ class ModernPhotoSorter(ctk.CTk):
         if p:
             self.dest_dir = p
             self.lbl_dest_path.configure(text=p)
-            self.lbl_current_event.configure(text="") # On réinitialise l'affichage du dossier
+            self.lbl_current_event.configure(text="")
             self.btn_rename.grid_forget()
             self.current_target_folder = None
+            self.load_index()
+            self.start_background_scan()
 
     def update_ui_state(self):
         t = len(self.photos)
