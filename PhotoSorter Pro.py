@@ -21,7 +21,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.13.17"
+        self.version = "v1.13.24"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -72,14 +72,14 @@ class ModernPhotoSorter(ctk.CTk):
         self.grid_rowconfigure(0, weight=1)
 
         # --- Panneau Latéral Gauche ---
-        self.sidebar = ctk.CTkFrame(self, width=240, corner_radius=0)
+        self.sidebar = ctk.CTkFrame(self, width=280, corner_radius=0)
         self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
         self.sidebar.grid_propagate(False) # Garder la largeur fixe
         self.sidebar.grid_rowconfigure(11, weight=1)
 
         # --- En-tête Sidebar ---
         self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="#1f3d6a", corner_radius=15, width=190, height=65)
-        self.header_frame.grid(row=0, column=0, sticky="", padx=25, pady=20)
+        self.header_frame.grid(row=0, column=0, sticky="", padx=45, pady=20)
         self.header_frame.grid_propagate(False)
         
         try:
@@ -96,14 +96,14 @@ class ModernPhotoSorter(ctk.CTk):
         self.lbl_subtitle = ctk.CTkLabel(self.header_frame, text=f"Version {self.version.lstrip('v')}", font=ctk.CTkFont(size=10), text_color="#a9cce3")
         self.lbl_subtitle.pack(pady=(0, 8), padx=5, expand=True)
         
-        self.btn_src = ctk.CTkButton(self.sidebar, text="📁 Choisir Source", width=180, command=self.load_source)
+        self.btn_src = ctk.CTkButton(self.sidebar, text="📁 Choisir Source", width=220, command=self.load_source)
         self.btn_src.grid(row=1, column=0, padx=20, pady=(10, 0))
-        self.lbl_src_path = ctk.CTkLabel(self.sidebar, text="Aucun dossier", text_color="gray", font=ctk.CTkFont(size=10), wraplength=200)
+        self.lbl_src_path = ctk.CTkLabel(self.sidebar, text="Aucun dossier", text_color="gray", font=ctk.CTkFont(size=10), wraplength=240)
         self.lbl_src_path.grid(row=2, column=0, padx=10, pady=(2, 10))
         
-        self.btn_dest = ctk.CTkButton(self.sidebar, text="🎯 Choisir Destination", width=180, command=self.load_dest)
+        self.btn_dest = ctk.CTkButton(self.sidebar, text="🎯 Choisir Destination", width=220, command=self.load_dest)
         self.btn_dest.grid(row=3, column=0, padx=10, pady=(5, 0))
-        self.lbl_dest_path = ctk.CTkLabel(self.sidebar, text="Aucun dossier", text_color="gray", font=ctk.CTkFont(size=10), wraplength=200)
+        self.lbl_dest_path = ctk.CTkLabel(self.sidebar, text="Aucun dossier", text_color="gray", font=ctk.CTkFont(size=10), wraplength=240)
         self.lbl_dest_path.grid(row=4, column=0, padx=10, pady=(2, 5))
 
         # --- Section Dossier Cible (Preview + Actions) v1.13.6 ---
@@ -142,44 +142,50 @@ class ModernPhotoSorter(ctk.CTk):
         self.lbl_stats = ctk.CTkLabel(self.sidebar, text="0 / 0 photos", font=ctk.CTkFont(size=14, weight="bold"))
         self.lbl_stats.grid(row=7, column=0, padx=20, pady=(5, 0))
         
-        self.lbl_filename = ctk.CTkLabel(self.sidebar, text="", text_color="white", font=ctk.CTkFont(size=12, weight="bold"), wraplength=220)
-        self.lbl_filename.grid(row=8, column=0, padx=10, pady=(0, 2))
+        self.lbl_filename = ctk.CTkLabel(self.sidebar, text="", font=ctk.CTkFont(size=11, weight="bold"), wraplength=200)
+        self.lbl_filename.grid(row=8, column=0, padx=10, pady=(10, 0))
 
-        self.lbl_file_date = ctk.CTkLabel(self.sidebar, text="", text_color="#3498db", font=ctk.CTkFont(size=11))
-        self.lbl_file_date.grid(row=9, column=0, padx=10, pady=(0, 5))
+        self.lbl_src_subdir = ctk.CTkLabel(self.sidebar, text="", font=ctk.CTkFont(size=9), text_color="gray")
+        self.lbl_src_subdir.grid(row=9, column=0, padx=10, pady=0)
+
+        self.lbl_file_date = ctk.CTkLabel(self.sidebar, text="", font=ctk.CTkFont(size=11), text_color="#3498db")
+        self.lbl_file_date.grid(row=10, column=0, padx=10, pady=(0, 10))
 
         self.progress_bar = ctk.CTkProgressBar(self.sidebar)
-        self.progress_bar.grid(row=10, column=0, padx=20, pady=5)
+        self.progress_bar.grid(row=11, column=0, padx=20, pady=5)
         self.progress_bar.set(0)
 
+        self.lbl_video_info = ctk.CTkLabel(self.sidebar, text="", font=ctk.CTkFont(size=10), text_color="#e67e22")
+        self.lbl_video_info.grid(row=12, column=0, padx=20, pady=0)
+
         self.lbl_scan_status = ctk.CTkLabel(self.sidebar, text="", font=ctk.CTkFont(size=10), text_color="#3498db")
-        self.lbl_scan_status.grid(row=11, column=0, padx=20, pady=0)
+        self.lbl_scan_status.grid(row=13, column=0, padx=20, pady=0)
         
         self.btn_reset_index = ctk.CTkButton(self.sidebar, text="🗑 Réinit. Index", font=ctk.CTkFont(size=9), 
                                              fg_color="transparent", border_width=1, height=18, width=80,
                                              command=self.reset_duplicate_index)
-        # Il sera griddé dynamiquement par load_index
+        self.btn_reset_index.grid(row=14, column=0, padx=10, pady=(20, 0), sticky="e")
 
-        self.btn_undo = ctk.CTkButton(self.sidebar, text="↩ Annuler (Ctrl+Z)", fg_color="#d35400", width=180, command=self.undo_last)
-        self.btn_undo.grid(row=13, column=0, padx=10, pady=5)
+        self.btn_undo = ctk.CTkButton(self.sidebar, text="↩ Annuler (Ctrl+Z)", fg_color="#d35400", width=220, command=self.undo_last)
+        self.btn_undo.grid(row=15, column=0, padx=10, pady=5)
 
-        self.btn_mic = ctk.CTkButton(self.sidebar, text="🎙 Activer la Voix", fg_color="#8e44ad", width=180, command=self.toggle_voice)
-        self.btn_mic.grid(row=14, column=0, padx=10, pady=5)
+        self.btn_mic = ctk.CTkButton(self.sidebar, text="🎙 Activer la Voix", fg_color="#8e44ad", width=220, command=self.toggle_voice)
+        self.btn_mic.grid(row=16, column=0, padx=10, pady=5)
 
         # --- Aide & Quitter (Discret) ---
         self.btn_help_keys = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        self.btn_help_keys.grid(row=15, column=0, pady=5)
+        self.btn_help_keys.grid(row=17, column=0, pady=5)
         
         self.btn_help = ctk.CTkButton(self.btn_help_keys, text="📖 Aide", width=88, height=26, font=ctk.CTkFont(size=10), command=self.show_readme)
         self.btn_help.grid(row=0, column=0, padx=2)
         self.btn_keys = ctk.CTkButton(self.btn_help_keys, text="⌨️ Touches", width=88, height=26, font=ctk.CTkFont(size=10), command=self.show_shortcuts_help)
         self.btn_keys.grid(row=0, column=1, padx=2)
 
-        self.btn_quit = ctk.CTkButton(self.sidebar, text="❌ Quitter l'application", fg_color="#c0392b", hover_color="#a93226", width=180, height=32, font=ctk.CTkFont(size=11, weight="bold"), command=self.quit_app)
-        self.btn_quit.grid(row=17, column=0, pady=(5, 15))
+        self.btn_quit = ctk.CTkButton(self.sidebar, text="❌ Quitter l'application", fg_color="#c0392b", hover_color="#a93226", width=220, height=32, font=ctk.CTkFont(size=11, weight="bold"), command=self.quit_app)
+        self.btn_quit.grid(row=19, column=0, pady=(5, 15))
 
         self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"v{self.version}", font=ctk.CTkFont(size=9), text_color="gray")
-        self.lbl_version.grid(row=16, column=0, pady=0)
+        self.lbl_version.grid(row=18, column=0, pady=0)
 
         # --- Zone Centrale ---
         self.main_frame = ctk.CTkFrame(self, corner_radius=10)
@@ -359,7 +365,7 @@ class ModernPhotoSorter(ctk.CTk):
                     self.save_index()
             except: pass
         
-        self.btn_reset_index.grid(row=12, column=0, padx=10, pady=(20, 0), sticky="e")
+        self.btn_reset_index.grid(row=14, column=0, padx=10, pady=(20, 0), sticky="e")
 
     def save_index(self):
         """Sauvegarde l'index des doublons."""
@@ -433,7 +439,16 @@ class ModernPhotoSorter(ctk.CTk):
         
         if self.idx < len(self.photos):
             self.update_ui_state()
-            p = os.path.join(self.source_dir, self.photos[self.idx])
+            filename = self.photos[self.idx]
+            p = os.path.join(self.source_dir, filename)
+            
+            # Affichage du sous-répertoire source (v1.13.21)
+            subdir = os.path.dirname(filename)
+            if subdir:
+                self.lbl_src_subdir.configure(text=f"📂 Origine : {subdir}")
+            else:
+                self.lbl_src_subdir.configure(text="")
+            
             self.lbl_filename.configure(text=os.path.basename(p))
             
             # Récupération de la date pour affichage
@@ -560,6 +575,10 @@ class ModernPhotoSorter(ctk.CTk):
             self.update_idletasks()
 
     def process_photo(self, action):
+        # Sécurité v1.13.22 : Ignorer si le prompt de saisie est ouvert
+        if self.frame_label.winfo_viewable():
+            return "break"
+            
         if self.idx >= len(self.photos): return
         
         filename = self.photos[self.idx]
@@ -640,7 +659,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.entry_label.focus()
 
     def confirm_label(self, label_text):
-        if not self.awaiting_label: return
+        if not self.awaiting_label: return "break"
         self.awaiting_label = False
         self.frame_label.grid_forget()
         self.focus_set() # Rendre le focus à la fenêtre principale
@@ -657,6 +676,7 @@ class ModernPhotoSorter(ctk.CTk):
         os.makedirs(target_folder, exist_ok=True)
         
         self.finalize_save(src_path, target_folder)
+        return "break"
 
     def execute_rename(self, new_label):
         old_path = self.current_target_folder
@@ -712,10 +732,13 @@ class ModernPhotoSorter(ctk.CTk):
             counter += 1
             
         try:
-            # On tente une sauvegarde propre avec rotation et EXIF
+            # On tente une sauvegarde propre avec rotation et EXIF (v1.13.23)
             with Image.open(src_path) as img:
                 img = ImageOps.exif_transpose(img)
-                if self.rotation != 0: img = img.rotate(self.rotation, expand=True)
+                rot_angle = self.rotations.get(os.path.basename(src_path), 0)
+                if rot_angle != 0: 
+                    img = img.rotate(rot_angle, expand=True)
+                
                 try:
                     exif_bytes = piexif.dump(piexif.load(src_path))
                     img.save(final_dest, quality=95, exif=exif_bytes)
@@ -741,7 +764,13 @@ class ModernPhotoSorter(ctk.CTk):
 
         archive_dir = os.path.join(self.source_dir, "_archive_traitee")
         os.makedirs(archive_dir, exist_ok=True)
+        
+        # Gestion des doublons dans l'archive (v1.13.19)
         arch_path = os.path.join(archive_dir, filename)
+        if os.path.exists(arch_path):
+            name, ext = os.path.splitext(filename)
+            arch_path = os.path.join(archive_dir, f"{name}_{int(time.time())}{ext}")
+            
         shutil.move(src_path, arch_path)
         self.history.append({"action": "save", "src": src_path, "dest": final_dest, "arch": arch_path})
         self.next_photo()
@@ -749,7 +778,14 @@ class ModernPhotoSorter(ctk.CTk):
     def finalize_trash(self, src_path):
         trash_dir = os.path.join(self.source_dir, "_corbeille_tri")
         os.makedirs(trash_dir, exist_ok=True)
-        arch_path = os.path.join(trash_dir, os.path.basename(src_path))
+        filename = os.path.basename(src_path)
+        arch_path = os.path.join(trash_dir, filename)
+        
+        # Gestion des doublons dans la corbeille (v1.13.19)
+        if os.path.exists(arch_path):
+            name, ext = os.path.splitext(filename)
+            arch_path = os.path.join(trash_dir, f"{name}_{int(time.time())}{ext}")
+            
         shutil.move(src_path, arch_path)
         self.history.append({"action": "trash", "src": src_path, "arch": arch_path})
         self.next_photo()
@@ -800,11 +836,29 @@ class ModernPhotoSorter(ctk.CTk):
                 return
             self.source_dir = p
             self.lbl_src_path.configure(text=p)
-            try: self.lbl_dest_preview.configure(text="")
-            except: pass
             self.btn_rename.grid_forget()
             self.current_target_folder = None
-            self.photos = [f for f in os.listdir(p) if f.lower().endswith(('.jpg','.jpeg','.png'))]
+            
+            # Scan récursif v1.13.20
+            self.photos = []
+            video_count = 0
+            photo_ext = ('.jpg', '.jpeg', '.png')
+            video_ext = ('.mov', '.mp4', '.avi', '.mkv', '.api')
+            
+            for root, dirs, files in os.walk(p):
+                # On ignore nos propres dossiers techniques
+                if "_archive_traitee" in root or "_corbeille_tri" in root:
+                    continue
+                for file in files:
+                    ext = os.path.splitext(file)[1].lower()
+                    if ext in photo_ext:
+                        # On stocke le chemin relatif
+                        rel_path = os.path.relpath(os.path.join(root, file), p)
+                        self.photos.append(rel_path)
+                    elif ext in video_ext:
+                        video_count += 1
+            
+            self.lbl_video_info.configure(text=f"🎥 {video_count} vidéos trouvées")
             self.idx = 0
             self.update_ui_state()
             self.show_current()
