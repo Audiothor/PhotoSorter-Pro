@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.9.8"
+        self.version = "v1.9.9"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -39,10 +39,8 @@ class ModernPhotoSorter(ctk.CTk):
         self.idx = 0
         self.rotation = 0
         self.history = []
-
-        # États pour la gestion du libellé
-        self.awaiting_label = False
-        self.temp_save_data = None
+        self.current_target_folder = None
+        self.is_renaming = False
 
         # Variables Vocales
         self.is_listening = False
@@ -100,6 +98,11 @@ class ModernPhotoSorter(ctk.CTk):
         self.lbl_current_event = ctk.CTkLabel(self.sidebar, text="", text_color="#f1c40f", font=ctk.CTkFont(size=13, weight="bold"), wraplength=240)
         self.lbl_current_event.grid(row=5, column=0, padx=10, pady=(0, 10))
 
+        self.btn_rename = ctk.CTkButton(self.sidebar, text="✏️ Modifier le nom", font=ctk.CTkFont(size=11), 
+                                        fg_color="transparent", border_width=1, height=24, 
+                                        command=self.start_rename)
+        # On ne l'affiche que si un dossier est actif (grid géré dans finalize_save)
+
         # --- ZONE LIBELLÉ ---
         self.frame_label = ctk.CTkFrame(self.sidebar, fg_color="#3d1d1d", corner_radius=10)
         self.lbl_prompt = ctk.CTkLabel(self.frame_label, text="NOUVEAU DOSSIER !\nNommez l'événement :", text_color="#e74c3c", font=ctk.CTkFont(weight="bold"))
@@ -110,31 +113,31 @@ class ModernPhotoSorter(ctk.CTk):
 
         # Stats & Progrès
         self.lbl_stats = ctk.CTkLabel(self.sidebar, text="0 / 0 photos")
-        self.lbl_stats.grid(row=7, column=0, padx=20, pady=10)
+        self.lbl_stats.grid(row=8, column=0, padx=20, pady=10)
         self.progress_bar = ctk.CTkProgressBar(self.sidebar)
-        self.progress_bar.grid(row=8, column=0, padx=20, pady=5)
+        self.progress_bar.grid(row=9, column=0, padx=20, pady=5)
         self.progress_bar.set(0)
 
         # Annuler
         self.btn_undo = ctk.CTkButton(self.sidebar, text="↩ Annuler (Ctrl+Z)", fg_color="#e67e22", hover_color="#d35400", 
                                       text_color="white", text_color_disabled="#e0e0e0", command=self.undo_last, state="disabled")
-        self.btn_undo.grid(row=9, column=0, padx=20, pady=10)
+        self.btn_undo.grid(row=10, column=0, padx=20, pady=10)
 
         # Micro
         self.btn_mic = ctk.CTkButton(self.sidebar, text="🎙 Activer la Voix", fg_color="#8e44ad", hover_color="#9b59b6", command=self.toggle_voice)
-        self.btn_mic.grid(row=10, column=0, padx=20, pady=10)
+        self.btn_mic.grid(row=11, column=0, padx=20, pady=10)
 
         # Aide
         self.btn_help = ctk.CTkButton(self.sidebar, text="📖 Aide (README)", fg_color="#2980b9", hover_color="#3498db", command=lambda: webbrowser.open("https://github.com/Audiothor/PhotoSorter-Pro#readme"))
-        self.btn_help.grid(row=11, column=0, padx=20, pady=10)
+        self.btn_help.grid(row=12, column=0, padx=20, pady=10)
 
         # Quitter
         self.btn_exit = ctk.CTkButton(self.sidebar, text="❌ Quitter", fg_color="#34495e", hover_color="#c0392b", command=self.destroy)
-        self.btn_exit.grid(row=12, column=0, padx=20, pady=(20, 5), sticky="s")
+        self.btn_exit.grid(row=13, column=0, padx=20, pady=(20, 5), sticky="s")
 
         # Label de version
         self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"Version {self.version} (Vérification...)", font=ctk.CTkFont(size=10), text_color="gray")
-        self.lbl_version.grid(row=13, column=0, padx=20, pady=(0, 10), sticky="s")
+        self.lbl_version.grid(row=14, column=0, padx=20, pady=(0, 10), sticky="s")
 
     def check_for_updates(self):
         try:
@@ -287,15 +290,35 @@ class ModernPhotoSorter(ctk.CTk):
 
     def show_label_prompt(self):
         self.awaiting_label = True
-        self.lbl_current_event.configure(text="En attente de libellé...", text_color="#e74c3c")
-        self.frame_label.grid(row=6, column=0, padx=10, pady=10, sticky="ew")
+        self.lbl_prompt.configure(text="NOUVEAU DOSSIER !\nNommez l'événement :")
+        self.frame_label.grid(row=7, column=0, padx=10, pady=10, sticky="ew")
         self.entry_label.delete(0, 'end')
+        self.entry_label.focus()
+
+    def start_rename(self):
+        if not self.current_target_folder: return
+        self.is_renaming = True
+        self.awaiting_label = True
+        self.lbl_prompt.configure(text="RENOMMER DOSSIER :\nNouveau libellé :")
+        self.frame_label.grid(row=7, column=0, padx=10, pady=10, sticky="ew")
+        
+        # Pré-remplir avec le libellé actuel (après YYYY-MM-DD )
+        current_name = os.path.basename(self.current_target_folder)
+        if len(current_name) >= 11:
+            self.entry_label.delete(0, 'end')
+            self.entry_label.insert(0, current_name[11:])
         self.entry_label.focus()
 
     def confirm_label(self, label_text):
         if not self.awaiting_label: return
         self.awaiting_label = False
         self.frame_label.grid_forget()
+        
+        if self.is_renaming:
+            self.execute_rename(label_text)
+            self.is_renaming = False
+            return
+            
         src_path, date_obj = self.temp_save_data
         
         folder_name = f"{date_obj.strftime('%Y-%m-%d')} {label_text}".strip()
@@ -304,7 +327,41 @@ class ModernPhotoSorter(ctk.CTk):
         
         self.finalize_save(src_path, target_folder)
 
+    def execute_rename(self, new_label):
+        old_path = self.current_target_folder
+        if not old_path or not os.path.exists(old_path): return
+        
+        parent = os.path.dirname(old_path)
+        base = os.path.basename(old_path)
+        prefix = base[:10] # YYYY-MM-DD
+        
+        new_name = f"{prefix} {new_label}".strip()
+        new_path = os.path.join(parent, new_name)
+        
+        if old_path == new_path: return
+        
+        try:
+            if os.path.exists(new_path):
+                # Fusionner si le dossier existe déjà
+                for f in os.listdir(old_path):
+                    shutil.move(os.path.join(old_path, f), os.path.join(new_path, f))
+                os.rmdir(old_path)
+            else:
+                os.rename(old_path, new_path)
+                
+            self.current_target_folder = new_path
+            self.lbl_current_event.configure(text=f"📁 Dossier : {os.path.basename(new_path)}")
+            
+            # Mettre à jour l'historique pour éviter de casser l'Undo
+            for h in self.history:
+                if "dest" in h and h["dest"].startswith(old_path):
+                    h["dest"] = h["dest"].replace(old_path, new_path)
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Échec du renommage : {e}")
+
     def finalize_save(self, src_path, target_folder):
+        self.current_target_folder = target_folder
+        self.btn_rename.grid(row=6, column=0, padx=10, pady=(0, 10))
         # Affichage dynamique du dossier cible en vert/jaune
         self.lbl_current_event.configure(text=f"📁 Dossier : {os.path.basename(target_folder)}", text_color="#2ecc71")
 
@@ -362,6 +419,8 @@ class ModernPhotoSorter(ctk.CTk):
             self.source_dir = p
             self.lbl_src_path.configure(text=p)
             self.lbl_current_event.configure(text="") # On réinitialise l'affichage du dossier
+            self.btn_rename.grid_forget()
+            self.current_target_folder = None
             self.photos = [f for f in os.listdir(p) if f.lower().endswith(('.jpg','.jpeg','.png'))]
             self.idx = 0
             self.update_ui_state()
@@ -373,6 +432,8 @@ class ModernPhotoSorter(ctk.CTk):
             self.dest_dir = p
             self.lbl_dest_path.configure(text=p)
             self.lbl_current_event.configure(text="") # On réinitialise l'affichage du dossier
+            self.btn_rename.grid_forget()
+            self.current_target_folder = None
 
     def update_ui_state(self):
         t = len(self.photos)
