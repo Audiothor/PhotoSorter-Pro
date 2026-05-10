@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.9.13"
+        self.version = "v1.9.14"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -47,6 +47,7 @@ class ModernPhotoSorter(ctk.CTk):
         # Variables Vocales
         self.is_listening = False
         self.recognizer = sr.Recognizer()
+        self.recognizer.pause_threshold = 0.5  # Plus réactif pour les mots courts
 
         self._setup_ui()
         self._bind_shortcuts()
@@ -224,9 +225,9 @@ class ModernPhotoSorter(ctk.CTk):
                         self.after(0, lambda c=cmd: self.confirm_label(c))
                     else:
                         # Ajout du mot exact "ok" ou "okay" grâce aux expressions régulières (Regex)
-                        if "supprimer" in cmd or "corbeille" in cmd or re.search(r'\b(non|nan|no|nope)\b', cmd): 
+                        if "supprimer" in cmd or "corbeille" in cmd or re.search(r'\b(non|nan|no|nope|nom)\b', cmd): 
                             self.after(0, lambda: self.process_photo("trash"))
-                        elif "garder" in cmd or "sauvegarder" in cmd or re.search(r'\b(ok|okay|oui|ouais|yes|yep)\b', cmd): 
+                        elif "garder" in cmd or "sauvegarder" in cmd or re.search(r'\b(ok|okay|oui|ouais|yes|yep|we)\b', cmd): 
                             self.after(0, lambda: self.process_photo("save"))
                         elif "rotation" in cmd or "tourner" in cmd: 
                             self.after(0, self.do_rotate)
