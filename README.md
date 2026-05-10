@@ -21,7 +21,7 @@ Une application de bureau Python moderne et interactive pour trier, organiser et
 
 ## ⚙️ Architecture Technique & Dépendances
 
-PhotoSorter Pro (v1.9.15) est développé avec une architecture claire séparant l'UI, le traitement d'image, et le thread d'écoute vocale :
+PhotoSorter Pro (v1.10.0) est développé avec une architecture claire séparant l'UI, le traitement d'image, et le thread d'écoute vocale :
 
 *   **UI/Framework :** `customtkinter` (Interface utilisateur moderne et responsive).
 *   **Moteur d'Image :** `Pillow` (PIL) pour le redimensionnement dynamique (`min(ratio_w, ratio_h)`) sans distorsion, et `ImageOps` pour la gestion native de l'orientation.
@@ -72,7 +72,7 @@ python "PhotoSorter Pro.py"
 ### ⌨️ Raccourcis Clavier
 | Action | Raccourci | Description |
 | :--- | :--- | :--- |
-| **Garder / Classer** | <kbd>Flèche Droite (→)</kbd> | Déplace et classe la photo dans le dossier, archive l'originale. |
+| **Garder / Classer** | <kbd>→</kbd> ou <kbd>Entrée</kbd> | Déplace et classe la photo dans le dossier, archive l'originale. |
 | **Corbeille** | <kbd>Suppr (Delete)</kbd> | Déplace la photo vers le dossier de protection `_corbeille_tri`. |
 | **Rotation** | <kbd>Espace</kbd> | Fait pivoter l'image de 90° (appliqué lors de la sauvegarde). |
 | **Annuler** | <kbd>Ctrl</kbd> + <kbd>Z</kbd> | Restaure la dernière photo traitée (et nettoie la cible si applicable). |

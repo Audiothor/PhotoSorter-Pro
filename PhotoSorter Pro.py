@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.9.15"
+        self.version = "v1.10.0"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -195,7 +195,7 @@ class ModernPhotoSorter(ctk.CTk):
         msg = (
             "⌨️ RACCOURCIS CLAVIER :\n"
             "----------------------------------\n"
-            "➡ Flèche Droite : Garder / Classer\n"
+            "➡ Flèche Droite / Entrée : Garder\n"
             "✖ Suppr : Mettre à la corbeille\n"
             "🔄 Espace : Rotation (90°)\n"
             "↩ Ctrl + Z : Annuler la dernière action\n\n"
@@ -210,6 +210,7 @@ class ModernPhotoSorter(ctk.CTk):
 
     def _bind_shortcuts(self):
         self.bind("<Right>", lambda event: self._on_shortcut("save"))
+        self.bind("<Return>", lambda event: self._on_shortcut("save"))
         self.bind("<Delete>", lambda event: self._on_shortcut("trash"))
         self.bind("<space>", lambda event: self._on_shortcut("rotate"))
         self.bind("<Control-z>", lambda event: self._on_shortcut("undo"))
@@ -275,19 +276,22 @@ class ModernPhotoSorter(ctk.CTk):
         if self.idx < len(self.photos):
             self.update_ui_state()
             p = os.path.join(self.source_dir, self.photos[self.idx])
-            with Image.open(p) as img:
-                img = ImageOps.exif_transpose(img)
-                if self.rotation != 0: img = img.rotate(self.rotation, expand=True)
-                
-                max_w, max_h = 800, 600
-                img_w, img_h = img.size
-                ratio = min(max_w / img_w, max_h / img_h)
-                new_w = int(img_w * ratio)
-                new_h = int(img_h * ratio)
-                
-                ci = ctk.CTkImage(img, size=(new_w, new_h))
-                self.image_label.configure(image=ci, text="")
-                self.image_label.image = ci
+            try:
+                with Image.open(p) as img:
+                    img = ImageOps.exif_transpose(img)
+                    if self.rotation != 0: img = img.rotate(self.rotation, expand=True)
+                    
+                    max_w, max_h = 800, 600
+                    img_w, img_h = img.size
+                    ratio = min(max_w / img_w, max_h / img_h)
+                    new_w = int(img_w * ratio)
+                    new_h = int(img_h * ratio)
+                    
+                    ci = ctk.CTkImage(img, size=(new_w, new_h))
+                    self.image_label.configure(image=ci, text="")
+                    self.image_label.image = ci
+            except Exception as e:
+                self.image_label.configure(image=None, text=f"⚠ Erreur de lecture :\n{self.photos[self.idx]}\n(Fichier peut-être corrompu)")
         else: 
             self.image_label.configure(image=None, text="Terminé !")
 
