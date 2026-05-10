@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.10.0"
+        self.version = "v1.10.1"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -276,6 +276,11 @@ class ModernPhotoSorter(ctk.CTk):
         if self.idx < len(self.photos):
             self.update_ui_state()
             p = os.path.join(self.source_dir, self.photos[self.idx])
+            
+            if not os.path.exists(p):
+                self.image_label.configure(image=None, text=f"⚠ Fichier introuvable :\n{self.photos[self.idx]}\n(Déplacé ou supprimé ?)")
+                return
+
             try:
                 with Image.open(p) as img:
                     img = ImageOps.exif_transpose(img)
@@ -291,18 +296,25 @@ class ModernPhotoSorter(ctk.CTk):
                     self.image_label.configure(image=ci, text="")
                     self.image_label.image = ci
             except Exception as e:
-                self.image_label.configure(image=None, text=f"⚠ Erreur de lecture :\n{self.photos[self.idx]}\n(Fichier peut-être corrompu)")
+                self.image_label.configure(image=None, text=f"⚠ Erreur de lecture :\n{self.photos[self.idx]}\n(Format non supporté ou fichier corrompu)")
         else: 
             self.image_label.configure(image=None, text="Terminé !")
 
     def process_photo(self, action):
-        if action == "save" and not self.dest_dir:
-            return messagebox.showwarning("Erreur", "Définit la destination !")
         if self.idx >= len(self.photos): return
-
-        src_path = os.path.join(self.source_dir, self.photos[self.idx])
         
+        filename = self.photos[self.idx]
+        src_path = os.path.join(self.source_dir, filename)
+        
+        # Sécurité : Si le fichier a disparu entre temps
+        if not os.path.exists(src_path):
+            messagebox.showwarning("Fichier introuvable", f"Le fichier {filename} semble avoir été déplacé ou supprimé.\nPassage à la photo suivante.")
+            self.next_photo()
+            return
+
         if action == "save":
+            if not self.dest_dir:
+                return messagebox.showwarning("Erreur", "Définit le dossier de destination !")
             date_obj = self.get_safe_date(src_path)
             date_prefix = date_obj.strftime('%Y-%m-%d')
             year_folder = os.path.join(self.dest_dir, date_obj.strftime('%Y'))
@@ -444,11 +456,18 @@ class ModernPhotoSorter(ctk.CTk):
     def undo_last(self):
         if not self.history: return
         h = self.history.pop()
-        shutil.move(h["arch"], h["src"])
-        if h["action"] == "save": os.remove(h["dest"])
-        self.idx -= 1
-        self.update_ui_state()
-        self.show_current()
+        try:
+            if os.path.exists(h["arch"]):
+                shutil.move(h["arch"], h["src"])
+                if h["action"] == "save" and os.path.exists(h["dest"]):
+                    os.remove(h["dest"])
+                self.idx -= 1
+                self.update_ui_state()
+                self.show_current()
+            else:
+                messagebox.showerror("Erreur Annuler", "Impossible de retrouver le fichier dans l'archive/corbeille.")
+        except Exception as e:
+            messagebox.showerror("Erreur Annuler", f"Erreur lors de la restauration :\n{e}")
 
     def load_source(self):
         p = filedialog.askdirectory()
