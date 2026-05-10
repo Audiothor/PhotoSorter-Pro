@@ -18,7 +18,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.9.14"
+        self.version = "v1.9.15"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -134,13 +134,17 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_help = ctk.CTkButton(self.sidebar, text="📖 Aide (README)", fg_color="#2980b9", hover_color="#3498db", command=lambda: webbrowser.open("https://github.com/Audiothor/PhotoSorter-Pro#readme"))
         self.btn_help.grid(row=12, column=0, padx=20, pady=10)
 
+        # Nouveau : Aide Commandes
+        self.btn_keys = ctk.CTkButton(self.sidebar, text="⌨️ Commandes & Touches", fg_color="#16a085", hover_color="#1abc9c", command=self.show_shortcuts_help)
+        self.btn_keys.grid(row=13, column=0, padx=20, pady=10)
+
         # Quitter
         self.btn_exit = ctk.CTkButton(self.sidebar, text="❌ Quitter", fg_color="#34495e", hover_color="#c0392b", command=self.destroy)
-        self.btn_exit.grid(row=13, column=0, padx=20, pady=(20, 5), sticky="s")
+        self.btn_exit.grid(row=14, column=0, padx=20, pady=(20, 5), sticky="s")
 
         # Label de version
         self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"Version {self.version} (Vérification...)", font=ctk.CTkFont(size=10), text_color="gray")
-        self.lbl_version.grid(row=14, column=0, padx=20, pady=(0, 10), sticky="s")
+        self.lbl_version.grid(row=15, column=0, padx=20, pady=(0, 10), sticky="s")
 
     def check_for_updates(self):
         try:
@@ -186,6 +190,23 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_trash.grid(row=0, column=1, padx=20, pady=20)
         self.btn_save = ctk.CTkButton(self.action_frame, text="💾 Classer (→)", fg_color="#2ecc71", command=lambda: self.process_photo("save"))
         self.btn_save.grid(row=0, column=2, padx=20, pady=20)
+
+    def show_shortcuts_help(self):
+        msg = (
+            "⌨️ RACCOURCIS CLAVIER :\n"
+            "----------------------------------\n"
+            "➡ Flèche Droite : Garder / Classer\n"
+            "✖ Suppr : Mettre à la corbeille\n"
+            "🔄 Espace : Rotation (90°)\n"
+            "↩ Ctrl + Z : Annuler la dernière action\n\n"
+            "🎙 COMMANDES VOCALES :\n"
+            "----------------------------------\n"
+            "✅ Garder, Sauvegarder, Ok, Oui, Ouais, Yes...\n"
+            "🗑 Supprimer, Corbeille, Non, Nan, No...\n"
+            "🔄 Rotation, Tourner\n"
+            "↩ Annuler"
+        )
+        messagebox.showinfo("Aide : Commandes & Touches", msg)
 
     def _bind_shortcuts(self):
         self.bind("<Right>", lambda event: self._on_shortcut("save"))
