@@ -21,7 +21,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.11.0"
+        self.version = "v1.11.1"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -74,49 +74,40 @@ class ModernPhotoSorter(ctk.CTk):
         self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
         self.sidebar.grid_rowconfigure(11, weight=1)
 
-        # --- En-tête Sidebar (Style Illustration Finale - Compact) ---
+        # --- En-tête Sidebar ---
         self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="#1f3d6a", corner_radius=15, width=190, height=65)
         self.header_frame.grid(row=0, column=0, sticky="", padx=45, pady=20)
-        self.header_frame.grid_propagate(False) # Empêche le cadre de s'agrandir
+        self.header_frame.grid_propagate(False)
         
         try:
-            from PIL import Image
-            import os
             icon_path = os.path.join(os.path.dirname(__file__), "assets", "app_icon.png")
             if os.path.exists(icon_path):
                 self.title_icon = ctk.CTkImage(light_image=Image.open(icon_path), dark_image=Image.open(icon_path), size=(40, 40))
                 self.lbl_title = ctk.CTkLabel(self.header_frame, text=" PhotoSorter Pro", image=self.title_icon, compound="left", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
             else:
                 self.lbl_title = ctk.CTkLabel(self.header_frame, text="📸 PhotoSorter Pro", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
-        except Exception:
+        except:
             self.lbl_title = ctk.CTkLabel(self.header_frame, text="📸 PhotoSorter Pro", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
             
         self.lbl_title.pack(pady=(8, 0), padx=5, expand=True)
         self.lbl_subtitle = ctk.CTkLabel(self.header_frame, text=f"Version {self.version.lstrip('v')}", font=ctk.CTkFont(size=10), text_color="#a9cce3")
         self.lbl_subtitle.pack(pady=(0, 8), padx=5, expand=True)
         
-        # Source
         self.btn_src = ctk.CTkButton(self.sidebar, text="📁 Choisir Source", command=self.load_source)
         self.btn_src.grid(row=1, column=0, padx=20, pady=(10, 0))
         self.lbl_src_path = ctk.CTkLabel(self.sidebar, text="Aucun dossier", text_color="gray", font=ctk.CTkFont(size=11), wraplength=220)
         self.lbl_src_path.grid(row=2, column=0, padx=10, pady=(2, 10))
         
-        # Destination
         self.btn_dest = ctk.CTkButton(self.sidebar, text="🎯 Choisir Destination", command=self.load_dest)
         self.btn_dest.grid(row=3, column=0, padx=20, pady=(10, 0))
         self.lbl_dest_path = ctk.CTkLabel(self.sidebar, text="Aucun dossier", text_color="gray", font=ctk.CTkFont(size=11), wraplength=220)
         self.lbl_dest_path.grid(row=4, column=0, padx=10, pady=(2, 10))
 
-        # --- NOUVEAU : Affichage du dossier en cours ---
         self.lbl_current_event = ctk.CTkLabel(self.sidebar, text="", text_color="#f1c40f", font=ctk.CTkFont(size=13, weight="bold"), wraplength=240)
         self.lbl_current_event.grid(row=5, column=0, padx=10, pady=(0, 10))
 
-        self.btn_rename = ctk.CTkButton(self.sidebar, text="✏️ Modifier le nom", font=ctk.CTkFont(size=11), 
-                                        fg_color="transparent", border_width=1, height=24, 
-                                        command=self.start_rename)
-        # On ne l'affiche que si un dossier est actif (grid géré dans finalize_save)
+        self.btn_rename = ctk.CTkButton(self.sidebar, text="✏️ Modifier le nom", font=ctk.CTkFont(size=11), fg_color="transparent", border_width=1, height=24, command=self.start_rename)
 
-        # --- ZONE LIBELLÉ ---
         self.frame_label = ctk.CTkFrame(self.sidebar, fg_color="#3d1d1d", corner_radius=10)
         self.lbl_prompt = ctk.CTkLabel(self.frame_label, text="NOUVEAU DOSSIER !\nNommez l'événement :", text_color="#e74c3c", font=ctk.CTkFont(weight="bold"))
         self.lbl_prompt.pack(pady=(10, 2))
@@ -124,74 +115,43 @@ class ModernPhotoSorter(ctk.CTk):
         self.entry_label.pack(pady=10, padx=10)
         self.entry_label.bind("<Return>", lambda e: self.confirm_label(self.entry_label.get()))
 
-        # Stats & Progrès
         self.lbl_stats = ctk.CTkLabel(self.sidebar, text="0 / 0 photos")
         self.lbl_stats.grid(row=8, column=0, padx=20, pady=10)
         self.progress_bar = ctk.CTkProgressBar(self.sidebar)
         self.progress_bar.grid(row=9, column=0, padx=20, pady=5)
         self.progress_bar.set(0)
 
-        # Annuler
-        self.btn_undo = ctk.CTkButton(self.sidebar, text="↩ Annuler (Ctrl+Z)", fg_color="#e67e22", hover_color="#d35400", 
-                                      text_color="white", text_color_disabled="#e0e0e0", command=self.undo_last, state="disabled")
+        self.btn_undo = ctk.CTkButton(self.sidebar, text="↩ Annuler (Ctrl+Z)", 
+                                      fg_color="#e67e22", hover_color="#d35400", 
+                                      text_color="white", 
+                                      text_color_disabled="#2c3e50", # Gris très sombre pour le contraste sur orange
+                                      font=ctk.CTkFont(weight="bold"),
+                                      command=self.undo_last, state="disabled")
         self.btn_undo.grid(row=10, column=0, padx=20, pady=10)
 
-        # Micro
         self.btn_mic = ctk.CTkButton(self.sidebar, text="🎙 Activer la Voix", fg_color="#8e44ad", hover_color="#9b59b6", command=self.toggle_voice)
         self.btn_mic.grid(row=11, column=0, padx=20, pady=10)
 
-        # Aide
         self.btn_help = ctk.CTkButton(self.sidebar, text="📖 Aide (README)", fg_color="#2980b9", hover_color="#3498db", command=lambda: webbrowser.open("https://github.com/Audiothor/PhotoSorter-Pro#readme"))
         self.btn_help.grid(row=12, column=0, padx=20, pady=10)
 
-        # Nouveau : Aide Commandes
         self.btn_keys = ctk.CTkButton(self.sidebar, text="⌨️ Commandes & Touches", fg_color="#16a085", hover_color="#1abc9c", command=self.show_shortcuts_help)
         self.btn_keys.grid(row=13, column=0, padx=20, pady=10)
 
-        # Quitter
         self.btn_exit = ctk.CTkButton(self.sidebar, text="❌ Quitter", fg_color="#34495e", hover_color="#c0392b", command=self.destroy)
         self.btn_exit.grid(row=14, column=0, padx=20, pady=(20, 5), sticky="s")
 
-        # Label de version
-        self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"Version {self.version} (Vérification...)", font=ctk.CTkFont(size=10), text_color="gray")
+        self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"Version {self.version}", font=ctk.CTkFont(size=10), text_color="gray")
         self.lbl_version.grid(row=15, column=0, padx=20, pady=(0, 10), sticky="s")
-
-        # Overlay Doublon (initialement masqué)
-        self.lbl_dup_warning = ctk.CTkLabel(self.main_content, text="⚠️ DOUBLON DÉTECTÉ !", fg_color="#c0392b", text_color="white", font=ctk.CTkFont(size=16, weight="bold"), corner_radius=10)
-        # Il sera affiché dynamiquement par show_current
-        
-    def check_for_updates(self):
-        try:
-            url = f"https://raw.githubusercontent.com/Audiothor/PhotoSorter-Pro/main/PhotoSorter%20Pro.py?t={int(datetime.now().timestamp())}"
-            req = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
-            with urllib.request.urlopen(req, timeout=5) as response:
-                content = response.read().decode('utf-8')
-                
-            match = re.search(r'self\.version\s*=\s*["\'](v[^"\']+)["\']', content)
-            if match:
-                remote_version = match.group(1)
-                
-                def parse_v(v): return tuple(map(int, v.strip('v').split('.')))
-                
-                if parse_v(remote_version) > parse_v(self.version):
-                    def update_ui_available():
-                        self.lbl_version.configure(text=f"🚀 Màj disponible : {remote_version} !", text_color="#2ecc71", cursor="hand2")
-                        self.lbl_version.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/Audiothor/PhotoSorter-Pro"))
-                    self.after(0, update_ui_available)
-                else:
-                    self.after(0, lambda: self.lbl_version.configure(
-                        text=f"À jour ({self.version})", text_color="gray"
-                    ))
-            else:
-                self.after(0, lambda: self.lbl_version.configure(text=f"Version {self.version}", text_color="gray"))
-        except Exception:
-            self.after(0, lambda: self.lbl_version.configure(text=f"Version {self.version} (Hors ligne)", text_color="gray"))
 
         # --- Zone Centrale ---
         self.main_frame = ctk.CTkFrame(self, corner_radius=10)
         self.main_frame.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
         self.image_label = ctk.CTkLabel(self.main_frame, text="Veuillez charger un dossier")
         self.image_label.pack(expand=True)
+
+        # Overlay Doublon
+        self.lbl_dup_warning = ctk.CTkLabel(self.main_frame, text="⚠️ DOUBLON DÉTECTÉ !", fg_color="#c0392b", text_color="white", font=ctk.CTkFont(size=16, weight="bold"), corner_radius=10)
 
         # Barre d'actions
         self.action_frame = ctk.CTkFrame(self, height=80, corner_radius=10)
@@ -204,6 +164,27 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_trash.grid(row=0, column=1, padx=20, pady=20)
         self.btn_save = ctk.CTkButton(self.action_frame, text="💾 Classer (→)", fg_color="#2ecc71", command=lambda: self.process_photo("save"))
         self.btn_save.grid(row=0, column=2, padx=20, pady=20)
+
+    def check_for_updates(self):
+        def _check():
+            try:
+                url = f"https://raw.githubusercontent.com/Audiothor/PhotoSorter-Pro/main/PhotoSorter%20Pro.py?t={int(datetime.now().timestamp())}"
+                req = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    content = response.read().decode('utf-8')
+                match = re.search(r'self\.version\s*=\s*["\'](v[^"\']+)["\']', content)
+                if match:
+                    remote_version = match.group(1)
+                    def parse_v(v): return tuple(map(int, v.strip('v').split('.')))
+                    if parse_v(remote_version) > parse_v(self.version):
+                        def update_ui():
+                            self.lbl_version.configure(text=f"🚀 Màj disponible : {remote_version} !", text_color="#2ecc71", cursor="hand2")
+                            self.lbl_version.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/Audiothor/PhotoSorter-Pro"))
+                        self.after(0, update_ui)
+                    else:
+                        self.after(0, lambda: self.lbl_version.configure(text=f"À jour ({self.version})", text_color="gray"))
+            except: pass
+        threading.Thread(target=_check, daemon=True).start()
 
     def show_shortcuts_help(self):
         msg = (
