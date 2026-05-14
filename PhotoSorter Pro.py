@@ -21,7 +21,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.13.24"
+        self.version = "v1.13.28"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -172,7 +172,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_mic = ctk.CTkButton(self.sidebar, text="🎙 Activer la Voix", fg_color="#8e44ad", width=220, command=self.toggle_voice)
         self.btn_mic.grid(row=16, column=0, padx=10, pady=5)
 
-        # --- Aide & Quitter (Discret) ---
+        # --- Aide & Quitter (v1.13.28) ---
         self.btn_help_keys = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.btn_help_keys.grid(row=17, column=0, pady=5)
         
@@ -181,11 +181,14 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_keys = ctk.CTkButton(self.btn_help_keys, text="⌨️ Touches", width=88, height=26, font=ctk.CTkFont(size=10), command=self.show_shortcuts_help)
         self.btn_keys.grid(row=0, column=1, padx=2)
 
-        self.btn_quit = ctk.CTkButton(self.sidebar, text="❌ Quitter l'application", fg_color="#c0392b", hover_color="#a93226", width=220, height=32, font=ctk.CTkFont(size=11, weight="bold"), command=self.quit_app)
-        self.btn_quit.grid(row=19, column=0, pady=(5, 15))
+        self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"À jour ({self.version})", font=("Inter", 11), text_color="#95a5a6")
+        self.lbl_version.grid(row=18, column=0, pady=(20, 0))
 
-        self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"v{self.version}", font=ctk.CTkFont(size=9), text_color="gray")
-        self.lbl_version.grid(row=18, column=0, pady=0)
+        self.btn_quit = ctk.CTkButton(self.sidebar, text="❌ Quitter l'application", 
+                                    command=self.quit_app, fg_color="#c0392b", hover_color="#a93226",
+                                    height=45, font=("Inter", 13, "bold"))
+        self.btn_quit.grid(row=19, column=0, padx=20, pady=(10, 40), sticky="ew")
+
 
         # --- Zone Centrale ---
         self.main_frame = ctk.CTkFrame(self, corner_radius=10)
@@ -456,54 +459,49 @@ class ModernPhotoSorter(ctk.CTk):
             self.lbl_file_date.configure(text=f"📅 Date : {date_obj.strftime('%d/%m/%Y')}")
             
             if not os.path.exists(p):
+
                 self.image_label.configure(image=None, text=f"⚠ Fichier introuvable :\n{self.photos[self.idx]}")
                 return
 
             # --- PRÉVISUALISATION DESTINATION (v1.12.1) ---
             self.update_folder_preview(p)
 
-            # --- DÉTECTION DE DOUBLONS AMÉLIORÉE (v1.11.2) ---
+            # --- DÉTECTION DE DOUBLONS (v1.13.27) ---
+            # Désormais basée UNIQUEMENT sur le contenu (Checksum MD5)
+            # Les conflits de noms sans correspondance de contenu ne sont plus signalés.
             current_md5 = self.calculate_md5(p)
             found_path = None
-            warn_msg = "⚠️ DOUBLON DÉTECTÉ !"
             
-            # 1. Vérification MD5 (Contenu exact)
             if current_md5 in self.checksum_db:
                 found_path = self.checksum_db[current_md5]
-                warn_msg = "⚠️ DOUBLON (CONTENU) !"
-            
-            # 2. Vérification par Nom (Optimisée v1.13.0)
-            if not found_path:
-                fname_lower = os.path.basename(p).lower()
-                if fname_lower in self.filename_db:
-                    found_path = self.filename_db[fname_lower]
-                    warn_msg = "⚠️ DOUBLON (NOM DE FICHIER) !"
-
-            # 3. Vérification PHYSIQUE en temps réel (v1.13.1) - Sécurité absolue
-            if not found_path and self.dest_dir:
-                date_obj = self.get_safe_date(p)
-                year_folder = os.path.join(self.dest_dir, date_obj.strftime('%Y'))
-                date_prefix = date_obj.strftime('%Y-%m-%d')
-                if os.path.exists(year_folder):
-                    for d in os.listdir(year_folder):
-                        if d.startswith(date_prefix):
-                            check_path = os.path.join(year_folder, d, os.path.basename(p))
-                            if os.path.exists(check_path):
-                                found_path = check_path
-                                warn_msg = "⚠️ DOUBLON (DÉTECTION DIRECTE) !"
-                                break
-
-            if found_path:
+                
                 # Vérification de sécurité : le doublon existe-t-il vraiment sur le disque ?
                 if not os.path.exists(found_path):
-                    # C'est un fantôme ! On le supprime de l'index
-                    if current_md5 in self.checksum_db:
-                        del self.checksum_db[current_md5]
+                    del self.checksum_db[current_md5]
+                    # Nettoyage index nom par sécurité
+                    fname_lower = os.path.basename(p).lower()
+                    if fname_lower in self.filename_db: del self.filename_db[fname_lower]
                     found_path = None
+                    self.save_index()
                 else:
-                    folder_hint = os.path.basename(os.path.dirname(found_path))
-                    self.lbl_dup_warning.configure(text=f"{warn_msg}\n(Déjà dans : {folder_hint})")
+                    # Affichage du chemin relatif pour plus de clarté (v1.13.27)
+                    rel_folder = os.path.relpath(os.path.dirname(found_path), self.dest_dir)
+                    self.lbl_dup_warning.configure(text=f"⚠️ DOUBLON (CONTENU IDENTIQUE)\n(Déjà dans : {rel_folder})")
                     self.lbl_dup_warning.place(relx=0.5, rely=0.1, anchor="center")
+
+            # Fallback v1.13.28 : Si non trouvé dans l'index, mais qu'un fichier du même nom 
+            # existe déjà dans le dossier cible prédit, on compare leurs MD5 en direct.
+            if not found_path and self.previewed_folder:
+                potential_file = os.path.join(self.previewed_folder, os.path.basename(p))
+                if os.path.exists(potential_file):
+                    dest_md5 = self.calculate_md5(potential_file)
+                    if dest_md5 and dest_md5 == current_md5:
+                        found_path = potential_file
+                        # On répare l'index au passage
+                        self.checksum_db[current_md5] = potential_file
+                        rel_folder = os.path.relpath(os.path.dirname(found_path), self.dest_dir)
+                        self.lbl_dup_warning.configure(text=f"⚠️ DOUBLON (DÉTECTION DIRECTE)\n(Déjà dans : {rel_folder})")
+                        self.lbl_dup_warning.place(relx=0.5, rely=0.1, anchor="center")
 
             try:
                 with Image.open(p) as img:
@@ -687,16 +685,57 @@ class ModernPhotoSorter(ctk.CTk):
         prefix = base[:10] # YYYY-MM-DD
         
         new_name = f"{prefix} {new_label}".strip()
-        new_path = os.path.join(parent, new_name)
+        new_path = os.path.normpath(os.path.join(parent, new_name))
+        old_path = os.path.normpath(old_path)
         
+        # Gestion spécifique Windows : Changement de casse uniquement
+        if old_path.lower() == new_path.lower() and old_path != new_path:
+            try:
+                # Sur Windows, on ne peut pas renommer directement "A" en "a"
+                # Il faut passer par un nom temporaire
+                temp_path = old_path + "_temp_rename"
+                os.rename(old_path, temp_path)
+                os.rename(temp_path, new_path)
+                self.current_target_folder = new_path
+                self.lbl_dest_preview.configure(text=f"📁 Dossier : {os.path.basename(new_path)}")
+                return
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Échec du changement de casse : {e}")
+                return
+
         if old_path == new_path: return
         
         try:
             if os.path.exists(new_path):
                 # Fusionner si le dossier existe déjà
                 for f in os.listdir(old_path):
-                    shutil.move(os.path.join(old_path, f), os.path.join(new_path, f))
-                os.rmdir(old_path)
+                    src_f = os.path.join(old_path, f)
+                    dst_f = os.path.join(new_path, f)
+                    
+                    # Gestion des conflits de noms de fichiers lors de la fusion
+                    if os.path.exists(dst_f):
+                        name, ext = os.path.splitext(f)
+                        counter = 1
+                        while os.path.exists(os.path.join(new_path, f"{name}_{counter}{ext}")):
+                            counter += 1
+                        dst_f = os.path.join(new_path, f"{name}_{counter}{ext}")
+                    
+                    shutil.move(src_f, dst_f)
+                
+                # Petite pause pour laisser Windows libérer les handles
+                time.sleep(0.2)
+                
+                # Tentative de suppression robuste
+                try:
+                    os.rmdir(old_path)
+                except OSError:
+                    # Si rmdir échoue (ex: Thumbs.db réapparu), on tente un nettoyage forcé
+                    for f in os.listdir(old_path):
+                        try: os.remove(os.path.join(old_path, f))
+                        except: pass
+                    time.sleep(0.1)
+                    try: os.rmdir(old_path)
+                    except: pass # Si ça échoue encore, on laisse tomber pour ne pas bloquer l'utilisateur
             else:
                 os.rename(old_path, new_path)
                 
@@ -705,10 +744,22 @@ class ModernPhotoSorter(ctk.CTk):
             
             # Mettre à jour l'historique pour éviter de casser l'Undo
             for h in self.history:
-                if "dest" in h and h["dest"].startswith(old_path):
-                    h["dest"] = h["dest"].replace(old_path, new_path)
+                if "dest" in h and h["dest"]:
+                    h["dest"] = os.path.normpath(h["dest"])
+                    if h["dest"].startswith(old_path):
+                        h["dest"] = h["dest"].replace(old_path, new_path)
+            
+            # Mettre à jour l'index des doublons (v1.13.25)
+            # On met à jour les chemins dans les bases MD5 et Nom
+            self.checksum_db = {k: (v.replace(old_path, new_path) if v.startswith(old_path) else v) 
+                               for k, v in self.checksum_db.items()}
+            self.filename_db = {k: (v.replace(old_path, new_path) if v.startswith(old_path) else v) 
+                               for k, v in self.filename_db.items()}
+            self.save_index()
+            
         except Exception as e:
             messagebox.showerror("Erreur", f"Échec du renommage : {e}")
+
 
     def finalize_save(self, src_path, target_folder):
         # Sécurité : On s'assure que le dossier cible existe bien
@@ -732,24 +783,44 @@ class ModernPhotoSorter(ctk.CTk):
             counter += 1
             
         try:
-            # On tente une sauvegarde propre avec rotation et EXIF (v1.13.23)
-            with Image.open(src_path) as img:
-                img = ImageOps.exif_transpose(img)
-                rot_angle = self.rotations.get(os.path.basename(src_path), 0)
-                if rot_angle != 0: 
-                    img = img.rotate(rot_angle, expand=True)
-                
+            # OPTIMISATION v1.13.28 : Préservation de l'original si aucune transformation n'est requise.
+            # On n'utilise PIL que si une rotation est demandée ou si l'image doit être redressée (EXIF).
+            needs_transform = (self.rotation != 0)
+            if not needs_transform:
                 try:
-                    exif_bytes = piexif.dump(piexif.load(src_path))
-                    img.save(final_dest, quality=95, exif=exif_bytes)
-                except: img.save(final_dest, quality=95)
+                    exif_dict = piexif.load(src_path)
+                    orientation = exif_dict.get("0th", {}).get(piexif.ImageIFD.Orientation, 1)
+                    if orientation != 1:
+                        needs_transform = True
+                except: pass
+
+            if not needs_transform:
+                # Copie binaire parfaite (Checksum MD5, EXIF, Qualité et Dates préservés)
+                shutil.copy2(src_path, final_dest)
+            else:
+                # Transformation nécessaire (Re-encodage via PIL)
+                with Image.open(src_path) as img:
+                    img = ImageOps.exif_transpose(img)
+                    if self.rotation != 0: 
+                        img = img.rotate(self.rotation, expand=True)
+                    
+                    try:
+                        exif_dict = piexif.load(src_path)
+                        if "0th" in exif_dict and piexif.ImageIFD.Orientation in exif_dict["0th"]:
+                            exif_dict["0th"][piexif.ImageIFD.Orientation] = 1 # Normalisation
+                        
+                        exif_bytes = piexif.dump(exif_dict)
+                        img.save(final_dest, quality=95, exif=exif_bytes)
+                    except: 
+                        img.save(final_dest, quality=95)
         except Exception as e:
-            # Fallback : simple copie si l'édition d'image échoue
+            # Fallback ultime en cas de problème avec PIL ou l'accès fichier
             try:
                 shutil.copy2(src_path, final_dest)
             except Exception as copy_err:
                 messagebox.showerror("Erreur Fatale", f"Impossible de copier le fichier :\n{copy_err}")
                 return
+
 
         try:
             stat = os.stat(src_path)
