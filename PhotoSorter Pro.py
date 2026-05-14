@@ -75,11 +75,11 @@ class ModernPhotoSorter(ctk.CTk):
         self.sidebar = ctk.CTkFrame(self, width=280, corner_radius=0)
         self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
         self.sidebar.grid_propagate(False) # Garder la largeur fixe
-        self.sidebar.grid_rowconfigure(11, weight=1)
+        self.sidebar.grid_rowconfigure(17, weight=1)
 
         # --- En-tête Sidebar ---
         self.header_frame = ctk.CTkFrame(self.sidebar, fg_color="#1f3d6a", corner_radius=15, width=190, height=65)
-        self.header_frame.grid(row=0, column=0, sticky="", padx=45, pady=20)
+        self.header_frame.grid(row=0, column=0, sticky="", padx=45, pady=(10, 15))
         self.header_frame.grid_propagate(False)
         
         try:
@@ -172,22 +172,25 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_mic = ctk.CTkButton(self.sidebar, text="🎙 Activer la Voix", fg_color="#8e44ad", width=220, command=self.toggle_voice)
         self.btn_mic.grid(row=16, column=0, padx=10, pady=5)
 
-        # --- Aide & Quitter (v1.13.28) ---
+        # --- Aide & Quitter (v1.13.28 Compact) ---
+        self.sidebar.grid_rowconfigure(17, weight=1) # Espace flexible pour stabiliser le bas
+
         self.btn_help_keys = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        self.btn_help_keys.grid(row=17, column=0, pady=5)
+        self.btn_help_keys.grid(row=18, column=0, pady=(5, 0))
         
-        self.btn_help = ctk.CTkButton(self.btn_help_keys, text="📖 Aide", width=88, height=26, font=ctk.CTkFont(size=10), command=self.show_readme)
+        self.btn_help = ctk.CTkButton(self.btn_help_keys, text="📖 Aide", width=88, height=24, font=ctk.CTkFont(size=10), command=self.show_readme)
         self.btn_help.grid(row=0, column=0, padx=2)
-        self.btn_keys = ctk.CTkButton(self.btn_help_keys, text="⌨️ Touches", width=88, height=26, font=ctk.CTkFont(size=10), command=self.show_shortcuts_help)
+        self.btn_keys = ctk.CTkButton(self.btn_help_keys, text="⌨️ Touches", width=88, height=24, font=ctk.CTkFont(size=10), command=self.show_shortcuts_help)
         self.btn_keys.grid(row=0, column=1, padx=2)
 
-        self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"À jour ({self.version})", font=("Inter", 11), text_color="#95a5a6")
-        self.lbl_version.grid(row=18, column=0, pady=(20, 0))
+        self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"À jour ({self.version})", font=("Inter", 10), text_color="#95a5a6")
+        self.lbl_version.grid(row=19, column=0, pady=(5, 0))
 
         self.btn_quit = ctk.CTkButton(self.sidebar, text="❌ Quitter l'application", 
                                     command=self.quit_app, fg_color="#c0392b", hover_color="#a93226",
-                                    height=45, font=("Inter", 13, "bold"))
-        self.btn_quit.grid(row=19, column=0, padx=20, pady=(10, 40), sticky="ew")
+                                    height=38, font=("Inter", 12, "bold"))
+        self.btn_quit.grid(row=20, column=0, padx=20, pady=(5, 20), sticky="ew")
+
 
 
         # --- Zone Centrale ---
