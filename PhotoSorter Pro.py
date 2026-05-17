@@ -21,7 +21,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.13.30"
+        self.version = "v1.13.31"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -102,7 +102,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_src = ctk.CTkButton(self.frame_src, text="📁 Choisir Source", width=180, command=self.load_source)
         self.btn_src.pack(side="left", fill="x", expand=True, padx=(0, 5))
         
-        self.btn_open_src = ctk.CTkButton(self.frame_src, text="👁️", width=35, font=ctk.CTkFont(size=12), command=lambda: self.open_in_explorer(self.source_dir, "source"))
+        self.btn_open_src = ctk.CTkButton(self.frame_src, text="👁", width=35, height=28, font=("Segoe UI Emoji", 13), anchor="center", command=lambda: self.open_in_explorer(self.source_dir, "source"))
         self.btn_open_src.pack(side="right")
 
         self.lbl_src_path = ctk.CTkLabel(self.sidebar, text="Aucun dossier", text_color="gray", font=ctk.CTkFont(size=10), wraplength=240)
@@ -114,7 +114,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_dest = ctk.CTkButton(self.frame_dest, text="🎯 Choisir Destination", width=180, command=self.load_dest)
         self.btn_dest.pack(side="left", fill="x", expand=True, padx=(0, 5))
         
-        self.btn_open_dest = ctk.CTkButton(self.frame_dest, text="👁️", width=35, font=ctk.CTkFont(size=12), command=lambda: self.open_in_explorer(self.dest_dir, "destination"))
+        self.btn_open_dest = ctk.CTkButton(self.frame_dest, text="👁", width=35, height=28, font=("Segoe UI Emoji", 13), anchor="center", command=lambda: self.open_in_explorer(self.dest_dir, "destination"))
         self.btn_open_dest.pack(side="right")
 
         self.lbl_dest_path = ctk.CTkLabel(self.sidebar, text="Aucun dossier", text_color="gray", font=ctk.CTkFont(size=10), wraplength=240)
