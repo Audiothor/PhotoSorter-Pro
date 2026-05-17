@@ -12,11 +12,13 @@ Une application de bureau Python moderne et interactive pour trier, organiser et
 *   **Détection Intelligente (Appareil & WhatsApp) :** Utilise une méthode en cascade pour récupérer la date : métadonnées EXIF en priorité, puis expression régulière (regex) sur le nom du fichier (ex: WhatsApp `IMG-20230101-WA...`), et enfin la date de création du système.
 *   **Classement Thématique Interactif :** Lorsqu'une nouvelle date est détectée, l'application se met en pause et vous demande (au clavier ou à la voix) un libellé pour l'événement (ex: `Soirée Jeux`, le dossier deviendra `2020-10-26 Soirée Jeux`).
 *   **Intégrité Absolue des Données :** Utilise `piexif` pour extraire et réinjecter les métadonnées originales (Appareil, GPS, Date) lors du déplacement ou de la rotation. La date système (atime/mtime) est rigoureusement préservée via `os.utime`.
-*   **Interface Moderne & Suivi visuel :** Construit avec `customtkinter` en mode sombre. L'application gère le redimensionnement fluide des images via `Pillow`, affiche en temps réel le dossier de destination actif, permet de le **renommer à la volée**, et propose un **guide interactif** des touches et commandes.
+*   **Interface Moderne & Suivi visuel :** Construit avec `customtkinter` en mode sombre. L'application gère le redimensionnement fluide des images (y compris `.bmp`) via `Pillow`, affiche en temps réel le dossier de destination actif, permet de le **renommer à la volée**, et propose un **guide interactif** des touches et commandes.
+*   **Affichage des Fichiers Restants :** Indique sous le nombre de vidéos trouvées le nombre exact de fichiers restants hors photos et vidéos (autres types de fichiers) présents dans le dossier source.
+*   **Support Étendu des Formats :** Intégration complète du format `.bmp` en plus des formats `.jpg`, `.jpeg` et `.png`, avec préservation de la qualité et gestion sécurisée des rotations de fichiers BMP.
 *   **Contrôle Vocal Mains-Libres :** Activez le micro et triez à la voix avec des commandes naturelles et souples (utilisation de Regex pour la détection : "garder", "sauvegarder", "ok", "okay", "oui", "supprimer", "corbeille", "non", "rotation", "tourner", "annuler").
 *   **Non-Destructif :** Les originaux traités sont archivés dans `_archive_traitee` et les refus vont dans `_corbeille_tri`. **Rien n'est supprimé définitivement.**
 *   **Historique et Annulation :** Un appui sur `Ctrl+Z` (ou commande vocale "Annuler") restaure l'image et défait la dernière action grâce à un système de pile d'historique.
-*   **Détection des Doublons Hybride (v1.13.28) :** Moteur d'indexation MD5 avec cache persistant (`.photosorter_index.json`) et système de détection physique en direct pour une fiabilité totale.
+*   **Détection des Doublons Hybride (v1.13.29) :** Moteur d'indexation MD5 avec cache persistant (`.photosorter_index.json`) et système de détection physique en direct pour une fiabilité totale.
 *   **Préservation Binaire Intégrale :** Utilisation de `shutil.copy2` pour copier les fichiers sans re-encodage (si aucune rotation n'est requise), garantissant une qualité 100% originale et la préservation de toutes les métadonnées.
 *   **Gestion Robuste des Dossiers :** Système de renommage et de fusion de dossiers sécurisé (gestion des conflits et de la casse Windows).
 
@@ -24,7 +26,7 @@ Une application de bureau Python moderne et interactive pour trier, organiser et
 
 ## ⚙️ Architecture Technique & Dépendances
 
-PhotoSorter Pro (v1.13.28) est développé avec une architecture claire séparant l'UI, le traitement d'image, le thread d'écoute vocale et le moteur d'indexation de doublons :
+PhotoSorter Pro (v1.13.29) est développé avec une architecture claire séparant l'UI, le traitement d'image, le thread d'écoute vocale et le moteur d'indexation de doublons :
 
 *   **UI/Framework :** `customtkinter` (Interface utilisateur moderne et responsive).
 *   **Moteur d'Image :** `Pillow` (PIL) pour le redimensionnement dynamique (`min(ratio_w, ratio_h)`) sans distorsion, et `ImageOps` pour la gestion native de l'orientation.

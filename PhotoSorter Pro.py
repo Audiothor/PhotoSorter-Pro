@@ -21,7 +21,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.13.28"
+        self.version = "v1.13.29"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -158,25 +158,28 @@ class ModernPhotoSorter(ctk.CTk):
         self.lbl_video_info = ctk.CTkLabel(self.sidebar, text="", font=ctk.CTkFont(size=10), text_color="#e67e22")
         self.lbl_video_info.grid(row=12, column=0, padx=20, pady=0)
 
+        self.lbl_other_files_info = ctk.CTkLabel(self.sidebar, text="", font=ctk.CTkFont(size=10), text_color="#95a5a6")
+        self.lbl_other_files_info.grid(row=13, column=0, padx=20, pady=0)
+
         self.lbl_scan_status = ctk.CTkLabel(self.sidebar, text="", font=ctk.CTkFont(size=10), text_color="#3498db")
-        self.lbl_scan_status.grid(row=13, column=0, padx=20, pady=0)
+        self.lbl_scan_status.grid(row=14, column=0, padx=20, pady=0)
         
         self.btn_reset_index = ctk.CTkButton(self.sidebar, text="🗑 Réinit. Index", font=ctk.CTkFont(size=9), 
                                              fg_color="transparent", border_width=1, height=18, width=80,
                                              command=self.reset_duplicate_index)
-        self.btn_reset_index.grid(row=14, column=0, padx=10, pady=(20, 0), sticky="e")
+        self.btn_reset_index.grid(row=15, column=0, padx=10, pady=(20, 0), sticky="e")
 
         self.btn_undo = ctk.CTkButton(self.sidebar, text="↩ Annuler (Ctrl+Z)", fg_color="#d35400", width=220, command=self.undo_last)
-        self.btn_undo.grid(row=15, column=0, padx=10, pady=5)
+        self.btn_undo.grid(row=16, column=0, padx=10, pady=5)
 
         self.btn_mic = ctk.CTkButton(self.sidebar, text="🎙 Activer la Voix", fg_color="#8e44ad", width=220, command=self.toggle_voice)
-        self.btn_mic.grid(row=16, column=0, padx=10, pady=5)
+        self.btn_mic.grid(row=17, column=0, padx=10, pady=5)
 
         # --- Aide & Quitter (v1.13.28 Compact) ---
-        self.sidebar.grid_rowconfigure(17, weight=1) # Espace flexible pour stabiliser le bas
+        self.sidebar.grid_rowconfigure(18, weight=1) # Espace flexible pour stabiliser le bas
 
         self.btn_help_keys = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        self.btn_help_keys.grid(row=18, column=0, pady=(5, 0))
+        self.btn_help_keys.grid(row=19, column=0, pady=(5, 0))
         
         self.btn_help = ctk.CTkButton(self.btn_help_keys, text="📖 Aide", width=88, height=24, font=ctk.CTkFont(size=10), command=self.show_readme)
         self.btn_help.grid(row=0, column=0, padx=2)
@@ -184,12 +187,12 @@ class ModernPhotoSorter(ctk.CTk):
         self.btn_keys.grid(row=0, column=1, padx=2)
 
         self.lbl_version = ctk.CTkLabel(self.sidebar, text=f"À jour ({self.version})", font=("Inter", 10), text_color="#95a5a6")
-        self.lbl_version.grid(row=19, column=0, pady=(5, 0))
+        self.lbl_version.grid(row=20, column=0, pady=(5, 0))
 
         self.btn_quit = ctk.CTkButton(self.sidebar, text="❌ Quitter l'application", 
                                     command=self.quit_app, fg_color="#c0392b", hover_color="#a93226",
                                     height=38, font=("Inter", 12, "bold"))
-        self.btn_quit.grid(row=20, column=0, padx=20, pady=(5, 20), sticky="ew")
+        self.btn_quit.grid(row=21, column=0, padx=20, pady=(5, 20), sticky="ew")
 
 
 
@@ -371,7 +374,7 @@ class ModernPhotoSorter(ctk.CTk):
                     self.save_index()
             except: pass
         
-        self.btn_reset_index.grid(row=14, column=0, padx=10, pady=(20, 0), sticky="e")
+        self.btn_reset_index.grid(row=15, column=0, padx=10, pady=(20, 0), sticky="e")
 
     def save_index(self):
         """Sauvegarde l'index des doublons."""
@@ -807,15 +810,19 @@ class ModernPhotoSorter(ctk.CTk):
                     if self.rotation != 0: 
                         img = img.rotate(self.rotation, expand=True)
                     
-                    try:
-                        exif_dict = piexif.load(src_path)
-                        if "0th" in exif_dict and piexif.ImageIFD.Orientation in exif_dict["0th"]:
-                            exif_dict["0th"][piexif.ImageIFD.Orientation] = 1 # Normalisation
-                        
-                        exif_bytes = piexif.dump(exif_dict)
-                        img.save(final_dest, quality=95, exif=exif_bytes)
-                    except: 
-                        img.save(final_dest, quality=95)
+                    is_bmp = final_dest.lower().endswith('.bmp')
+                    if is_bmp:
+                        img.save(final_dest)
+                    else:
+                        try:
+                            exif_dict = piexif.load(src_path)
+                            if "0th" in exif_dict and piexif.ImageIFD.Orientation in exif_dict["0th"]:
+                                exif_dict["0th"][piexif.ImageIFD.Orientation] = 1 # Normalisation
+                            
+                            exif_bytes = piexif.dump(exif_dict)
+                            img.save(final_dest, quality=95, exif=exif_bytes)
+                        except: 
+                            img.save(final_dest, quality=95)
         except Exception as e:
             # Fallback ultime en cas de problème avec PIL ou l'accès fichier
             try:
@@ -916,7 +923,8 @@ class ModernPhotoSorter(ctk.CTk):
             # Scan récursif v1.13.20
             self.photos = []
             video_count = 0
-            photo_ext = ('.jpg', '.jpeg', '.png')
+            other_count = 0
+            photo_ext = ('.jpg', '.jpeg', '.png', '.bmp')
             video_ext = ('.mov', '.mp4', '.avi', '.mkv', '.api')
             
             for root, dirs, files in os.walk(p):
@@ -931,8 +939,11 @@ class ModernPhotoSorter(ctk.CTk):
                         self.photos.append(rel_path)
                     elif ext in video_ext:
                         video_count += 1
+                    else:
+                        other_count += 1
             
             self.lbl_video_info.configure(text=f"🎥 {video_count} vidéos trouvées")
+            self.lbl_other_files_info.configure(text=f"📁 {other_count} fichiers restants (hors médias)")
             self.idx = 0
             self.update_ui_state()
             self.show_current()
