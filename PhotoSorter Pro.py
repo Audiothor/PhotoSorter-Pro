@@ -21,7 +21,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.13.29"
+        self.version = "v1.13.30"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -96,13 +96,27 @@ class ModernPhotoSorter(ctk.CTk):
         self.lbl_subtitle = ctk.CTkLabel(self.header_frame, text=f"Version {self.version.lstrip('v')}", font=ctk.CTkFont(size=10), text_color="#a9cce3")
         self.lbl_subtitle.pack(pady=(0, 8), padx=5, expand=True)
         
-        self.btn_src = ctk.CTkButton(self.sidebar, text="📁 Choisir Source", width=220, command=self.load_source)
-        self.btn_src.grid(row=1, column=0, padx=20, pady=(10, 0))
+        self.frame_src = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        self.frame_src.grid(row=1, column=0, padx=20, pady=(10, 0), sticky="ew")
+        
+        self.btn_src = ctk.CTkButton(self.frame_src, text="📁 Choisir Source", width=180, command=self.load_source)
+        self.btn_src.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        
+        self.btn_open_src = ctk.CTkButton(self.frame_src, text="👁️", width=35, font=ctk.CTkFont(size=12), command=lambda: self.open_in_explorer(self.source_dir, "source"))
+        self.btn_open_src.pack(side="right")
+
         self.lbl_src_path = ctk.CTkLabel(self.sidebar, text="Aucun dossier", text_color="gray", font=ctk.CTkFont(size=10), wraplength=240)
         self.lbl_src_path.grid(row=2, column=0, padx=10, pady=(2, 10))
         
-        self.btn_dest = ctk.CTkButton(self.sidebar, text="🎯 Choisir Destination", width=220, command=self.load_dest)
-        self.btn_dest.grid(row=3, column=0, padx=10, pady=(5, 0))
+        self.frame_dest = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        self.frame_dest.grid(row=3, column=0, padx=20, pady=(5, 0), sticky="ew")
+        
+        self.btn_dest = ctk.CTkButton(self.frame_dest, text="🎯 Choisir Destination", width=180, command=self.load_dest)
+        self.btn_dest.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        
+        self.btn_open_dest = ctk.CTkButton(self.frame_dest, text="👁️", width=35, font=ctk.CTkFont(size=12), command=lambda: self.open_in_explorer(self.dest_dir, "destination"))
+        self.btn_open_dest.pack(side="right")
+
         self.lbl_dest_path = ctk.CTkLabel(self.sidebar, text="Aucun dossier", text_color="gray", font=ctk.CTkFont(size=10), wraplength=240)
         self.lbl_dest_path.grid(row=4, column=0, padx=10, pady=(2, 5))
 
@@ -265,6 +279,24 @@ class ModernPhotoSorter(ctk.CTk):
             "↩ Annuler"
         )
         messagebox.showinfo("Aide : Commandes & Touches", msg)
+
+    def open_in_explorer(self, path, folder_type):
+        if not path or not os.path.exists(path):
+            messagebox.showwarning("Dossier introuvable", f"Veuillez d'abord sélectionner un dossier de {folder_type} valide.")
+            return
+        try:
+            import platform
+            path_norm = os.path.normpath(path)
+            if platform.system() == "Windows":
+                os.startfile(path_norm)
+            elif platform.system() == "Darwin": # macOS
+                import subprocess
+                subprocess.Popen(["open", path_norm])
+            else: # Linux/other
+                import subprocess
+                subprocess.Popen(["xdg-open", path_norm])
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible d'ouvrir le dossier :\n{e}")
 
     def _bind_shortcuts(self):
         self.bind("<Right>", lambda event: self._on_shortcut("save"))
