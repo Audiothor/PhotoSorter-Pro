@@ -21,7 +21,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.14.6"
+        self.version = "v1.14.7"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -343,7 +343,12 @@ class ModernPhotoSorter(ctk.CTk):
         if action == "save": self.process_photo("save")
         elif action == "trash": self.process_photo("trash")
         elif action == "skip": self.next_photo()
-        elif action == "rotate": self.do_rotate()
+        elif action == "rotate":
+            if self.idx < len(self.photos):
+                filename = self.photos[self.idx]
+                is_video = os.path.splitext(filename)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
+                if is_video: return
+            self.do_rotate()
         elif action == "undo": self.undo_last()
 
     def do_rotate(self):
@@ -383,6 +388,10 @@ class ModernPhotoSorter(ctk.CTk):
                         elif "garder" in cmd or "sauvegarder" in cmd or re.search(r'\b(ok|okay|oui|ouais|yes|yep|we)\b', cmd): 
                             self.after(0, lambda: self.process_photo("save"))
                         elif "rotation" in cmd or "tourner" in cmd: 
+                            if self.idx < len(self.photos):
+                                filename = self.photos[self.idx]
+                                is_video = os.path.splitext(filename)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
+                                if is_video: continue
                             self.after(0, self.do_rotate)
                         elif "annuler" in cmd: 
                             self.after(0, self.undo_last)
@@ -931,7 +940,18 @@ class ModernPhotoSorter(ctk.CTk):
 
 
     def set_ui_buttons_state(self, state):
-        self.btn_rotate.configure(state=state)
+        # La rotation n'est disponible que pour les photos (v1.14.7)
+        if state == "normal":
+            t = len(self.photos)
+            if t > 0 and self.idx < t:
+                filename = self.photos[self.idx]
+                is_video = os.path.splitext(filename)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
+                self.btn_rotate.configure(state="disabled" if is_video else "normal")
+            else:
+                self.btn_rotate.configure(state="disabled")
+        else:
+            self.btn_rotate.configure(state="disabled")
+            
         self.btn_trash.configure(state=state)
         self.btn_save.configure(state=state)
         self.btn_undo.configure(state="normal" if state == "normal" and self.history else "disabled")
@@ -1187,6 +1207,14 @@ class ModernPhotoSorter(ctk.CTk):
             self.progress_bar.set(0)
             
         self.btn_undo.configure(state="normal" if self.history else "disabled")
+        
+        # Gestion dynamique de l'activation du bouton rotation (v1.14.7)
+        if t > 0 and self.idx < t:
+            filename = self.photos[self.idx]
+            is_video = os.path.splitext(filename)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
+            self.btn_rotate.configure(state="disabled" if is_video else "normal")
+        else:
+            self.btn_rotate.configure(state="disabled")
 
 if __name__ == "__main__":
     app = ModernPhotoSorter()
