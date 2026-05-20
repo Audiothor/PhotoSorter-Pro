@@ -21,7 +21,7 @@ ctk.set_default_color_theme("blue")
 class ModernPhotoSorter(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.version = "v1.13.31"
+        self.version = "v1.14.6"
 
         self.title("PhotoSorter Pro - " + self.version)
         self.geometry("1250x850")
@@ -47,6 +47,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.awaiting_label = False
         self.temp_save_data = None
         self.previewed_folder = None # Dossier suggéré/affiché (v1.13.2)
+        self.is_copying = False
 
         # Variables Vocales
         # Variables Vocales
@@ -153,7 +154,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.entry_label.bind("<Return>", lambda e: self.confirm_label(self.entry_label.get()))
         self.frame_label.grid_forget()
 
-        self.lbl_stats = ctk.CTkLabel(self.sidebar, text="0 / 0 photos", font=ctk.CTkFont(size=14, weight="bold"))
+        self.lbl_stats = ctk.CTkLabel(self.sidebar, text="0 / 0 médias", font=ctk.CTkFont(size=14, weight="bold"))
         self.lbl_stats.grid(row=7, column=0, padx=20, pady=(5, 0))
         
         self.lbl_filename = ctk.CTkLabel(self.sidebar, text="", font=ctk.CTkFont(size=11, weight="bold"), wraplength=200)
@@ -183,7 +184,7 @@ class ModernPhotoSorter(ctk.CTk):
                                              command=self.reset_duplicate_index)
         self.btn_reset_index.grid(row=15, column=0, padx=10, pady=(20, 0), sticky="e")
 
-        self.btn_undo = ctk.CTkButton(self.sidebar, text="↩ Annuler (Ctrl+Z)", fg_color="#d35400", width=220, command=self.undo_last)
+        self.btn_undo = ctk.CTkButton(self.sidebar, text="↩ Annuler (Ctrl+Z)", fg_color="#d35400", width=220, command=self.undo_last, text_color_disabled="#2c3e50")
         self.btn_undo.grid(row=16, column=0, padx=10, pady=5)
 
         self.btn_mic = ctk.CTkButton(self.sidebar, text="🎙 Activer la Voix", fg_color="#8e44ad", width=220, command=self.toggle_voice)
@@ -215,6 +216,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.main_frame.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
         self.image_label = ctk.CTkLabel(self.main_frame, text="Veuillez charger un dossier")
         self.image_label.pack(expand=True)
+        self.image_label.bind("<Button-1>", self.on_image_click)
 
         # Overlay Doublon
         self.lbl_dup_warning = ctk.CTkLabel(self.main_frame, text="⚠️ DOUBLON DÉTECTÉ !", fg_color="#c0392b", text_color="white", font=ctk.CTkFont(size=16, weight="bold"), corner_radius=10)
@@ -298,6 +300,29 @@ class ModernPhotoSorter(ctk.CTk):
         except Exception as e:
             messagebox.showerror("Erreur", f"Impossible d'ouvrir le dossier :\n{e}")
 
+    def play_media(self, path):
+        try:
+            import platform
+            path_norm = os.path.normpath(path)
+            if platform.system() == "Windows":
+                os.startfile(path_norm)
+            elif platform.system() == "Darwin": # macOS
+                import subprocess
+                subprocess.Popen(["open", path_norm])
+            else: # Linux/other
+                import subprocess
+                subprocess.Popen(["xdg-open", path_norm])
+        except Exception as e:
+            messagebox.showerror("Erreur de lecture", f"Impossible de lancer la vidéo :\n{e}")
+
+    def on_image_click(self, event):
+        if self.idx < len(self.photos):
+            filename = self.photos[self.idx]
+            p = os.path.join(self.source_dir, filename)
+            is_video = os.path.splitext(p)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
+            if is_video and os.path.exists(p):
+                self.play_media(p)
+
     def _bind_shortcuts(self):
         self.bind("<Right>", lambda event: self._on_shortcut("save"))
         self.bind("<Return>", lambda event: self._on_shortcut("save"))
@@ -307,6 +332,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.bind("<Control-z>", lambda event: self._on_shortcut("undo"))
 
     def _on_shortcut(self, action):
+        if self.is_copying: return
         # SECURITÉ (v1.12.6) : Ignorer les raccourcis si on tape dans un champ de texte
         # focus_get() peut retourner un widget interne de CustomTkinter, on vérifie donc le type
         focused = self.focus_get()
@@ -321,6 +347,13 @@ class ModernPhotoSorter(ctk.CTk):
         elif action == "undo": self.undo_last()
 
     def do_rotate(self):
+        if self.is_copying: return
+        if self.idx < len(self.photos):
+            filename = self.photos[self.idx]
+            is_video = os.path.splitext(filename)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
+            if is_video:
+                messagebox.showinfo("Rotation non disponible", "La rotation des fichiers vidéo n'est pas prise en charge.")
+                return
         self.rotation = (self.rotation - 90) % 360
         self.show_current()
 
@@ -368,7 +401,9 @@ class ModernPhotoSorter(ctk.CTk):
             y, m, d = match.groups()
             try: return datetime(int(y), int(m), int(d))
             except: pass
-        return datetime.fromtimestamp(os.path.getctime(path))
+        mtime = os.path.getmtime(path)
+        ctime = os.path.getctime(path)
+        return datetime.fromtimestamp(min(mtime, ctime))
 
     def calculate_md5(self, file_path):
         """Calcule l'empreinte MD5 d'un fichier."""
@@ -379,6 +414,79 @@ class ModernPhotoSorter(ctk.CTk):
                     hash_md5.update(chunk)
             return hash_md5.hexdigest()
         except: return None
+
+    def generate_video_placeholder(self, path):
+        """Génère une image de prévisualisation élégante pour les fichiers vidéo."""
+        from PIL import ImageDraw, ImageFont
+        width, height = 800, 600
+        img = Image.new("RGBA", (width, height), "#1a252f")
+        draw = ImageDraw.Draw(img)
+        
+        # Dessiner un bouton play stylisé au centre
+        cx, cy = 400, 240
+        r = 55
+        # Cercle extérieur avec dégradé subtil/bordure
+        draw.ellipse([cx-r, cy-r, cx+r, cy+r], fill="#e67e22", outline="#d35400", width=4)
+        
+        # Triangle de lecture
+        tr_w = 26
+        tr_h = 32
+        p1 = (cx - 8, cy - tr_h // 2)
+        p2 = (cx - 8, cy + tr_h // 2)
+        p3 = (cx + tr_w - 8, cy)
+        draw.polygon([p1, p2, p3], fill="white")
+        
+        # Informations sur le fichier
+        filename = os.path.basename(path)
+        try:
+            size_mb = os.path.getsize(path) / (1024 * 1024)
+            size_str = f"{size_mb:.2f} Mo"
+        except:
+            size_str = "Taille inconnue"
+            
+        ext = os.path.splitext(filename)[1].upper()
+        
+        text_title = f"FICHIER VIDÉO {ext}"
+        text_desc = f"{filename}\n({size_str})"
+        
+        # Tentative d'utiliser des polices système standard pour un rendu premium
+        font_title = None
+        font_desc = None
+        for font_name in ["arial.ttf", "calibri.ttf", "Segoe UI.ttf"]:
+            try:
+                font_title = ImageFont.truetype(font_name, 26)
+                font_desc = ImageFont.truetype(font_name, 16)
+                break
+            except:
+                pass
+                
+        if font_title and font_desc:
+            w_t = draw.textlength(text_title, font=font_title)
+            draw.text((400 - w_t//2, 350), text_title, fill="#f39c12", font=font_title)
+            
+            lines = text_desc.split('\n')
+            curr_y = 400
+            for line in lines:
+                w_d = draw.textlength(line, font=font_desc)
+                draw.text((400 - w_d//2, curr_y), line, fill="#ecf0f1", font=font_desc)
+                curr_y += 24
+        else:
+            # Fallback simple
+            draw.text((320, 350), text_title, fill="#f39c12")
+            draw.text((300, 400), text_desc, fill="#ecf0f1")
+            
+        # Ajouter une note explicative moderne
+        note_text = "▶ Cliquer ici pour lire la vidéo • Entrée / Flèche Droite pour classer"
+        try:
+            font_note = ImageFont.truetype("arial.ttf", 13) if font_title else None
+            if font_note:
+                w_n = draw.textlength(note_text, font=font_note)
+                draw.text((400 - w_n//2, 520), note_text, fill="#7f8c8d", font=font_note)
+            else:
+                draw.text((250, 520), note_text, fill="#7f8c8d")
+        except: pass
+            
+        return img
 
     def load_index(self):
         """Charge l'index et peuple les bases MD5 et Nom de fichier."""
@@ -497,8 +605,8 @@ class ModernPhotoSorter(ctk.CTk):
             self.lbl_file_date.configure(text=f"📅 Date : {date_obj.strftime('%d/%m/%Y')}")
             
             if not os.path.exists(p):
-
-                self.image_label.configure(image=None, text=f"⚠ Fichier introuvable :\n{self.photos[self.idx]}")
+                self.image_label.configure(image="", text=f"⚠ Fichier introuvable :\n{self.photos[self.idx]}")
+                self.image_label.image = None
                 return
 
             # --- PRÉVISUALISATION DESTINATION (v1.12.1) ---
@@ -541,26 +649,40 @@ class ModernPhotoSorter(ctk.CTk):
                         self.lbl_dup_warning.configure(text=f"⚠️ DOUBLON (DÉTECTION DIRECTE)\n(Déjà dans : {rel_folder})")
                         self.lbl_dup_warning.place(relx=0.5, rely=0.1, anchor="center")
 
-            try:
-                with Image.open(p) as img:
-                    img = ImageOps.exif_transpose(img)
-                    if self.rotation != 0: img = img.rotate(self.rotation, expand=True)
-                    
-                    max_w, max_h = 800, 600
-                    img_w, img_h = img.size
-                    ratio = min(max_w / img_w, max_h / img_h)
-                    new_w = int(img_w * ratio)
-                    new_h = int(img_h * ratio)
-                    
-                    ci = ctk.CTkImage(img, size=(new_w, new_h))
-                    self.image_label.configure(image=ci, text="")
+            # Détection du type de média
+            is_video = os.path.splitext(p)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
+            
+            if is_video:
+                try:
+                    img = self.generate_video_placeholder(p)
+                    ci = ctk.CTkImage(img, size=(800, 600))
+                    self.image_label.configure(image=ci, text="", cursor="hand2")
                     self.image_label.image = ci
-            except Exception as e:
-                self.image_label.configure(image=None, text=f"⚠ Erreur de lecture :\n{self.photos[self.idx]}\n(Format non supporté ou fichier corrompu)")
+                except Exception as e:
+                    self.image_label.configure(image=None, text=f"🎥 Fichier Vidéo :\n{os.path.basename(p)}", cursor="hand2")
+            else:
+                try:
+                    with Image.open(p) as img:
+                        img = ImageOps.exif_transpose(img)
+                        if self.rotation != 0: img = img.rotate(self.rotation, expand=True)
+                        
+                        max_w, max_h = 800, 600
+                        img_w, img_h = img.size
+                        ratio = min(max_w / img_w, max_h / img_h)
+                        new_w = int(img_w * ratio)
+                        new_h = int(img_h * ratio)
+                        
+                        ci = ctk.CTkImage(img, size=(new_w, new_h))
+                        self.image_label.configure(image=ci, text="", cursor="")
+                        self.image_label.image = ci
+                except Exception as e:
+                    self.image_label.configure(image="", text=f"⚠ Erreur de lecture :\n{self.photos[self.idx]}\n(Format non supporté ou fichier corrompu)", cursor="")
+                    self.image_label.image = None
         else: 
             # ÉCRAN DE FIN PROPRE (v1.12.8)
             self.update_ui_state()
-            self.image_label.configure(image=None, text="✨ Félicitations !\nToutes les photos sont triées.")
+            self.image_label.configure(image="", text="✨ Félicitations !\nTous vos médias (photos & vidéos) sont triés.", cursor="")
+            self.image_label.image = None
             self.lbl_filename.configure(text="")
             self.lbl_file_date.configure(text="")
             self.lbl_dest_preview.configure(text="✅ Travail terminé", text_color="#2ecc71")
@@ -579,7 +701,9 @@ class ModernPhotoSorter(ctk.CTk):
             p_norm = os.path.normpath(src_path)
             date_obj = self.get_safe_date(p_norm)
             date_prefix = date_obj.strftime('%Y-%m-%d')
-            year_folder = os.path.join(self.dest_dir, date_obj.strftime('%Y'))
+            is_video = os.path.splitext(p_norm)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
+            media_subfolder = "video" if is_video else "photo"
+            year_folder = os.path.join(self.dest_dir, media_subfolder, date_obj.strftime('%Y'))
 
             # 1. Dossier de la session en cours
             if self.current_target_folder and os.path.exists(self.current_target_folder):
@@ -611,6 +735,7 @@ class ModernPhotoSorter(ctk.CTk):
             self.update_idletasks()
 
     def process_photo(self, action):
+        if self.is_copying: return "break"
         # Sécurité v1.13.22 : Ignorer si le prompt de saisie est ouvert
         if self.frame_label.winfo_viewable():
             return "break"
@@ -632,7 +757,9 @@ class ModernPhotoSorter(ctk.CTk):
             
             date_obj = self.get_safe_date(src_path)
             date_prefix = date_obj.strftime('%Y-%m-%d')
-            year_folder = os.path.join(self.dest_dir, date_obj.strftime('%Y'))
+            is_video = os.path.splitext(src_path)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
+            media_subfolder = "video" if is_video else "photo"
+            year_folder = os.path.join(self.dest_dir, media_subfolder, date_obj.strftime('%Y'))
             
             # 1. On vérifie si le dossier courant de la session correspond à la date
             if self.current_target_folder and os.path.exists(self.current_target_folder):
@@ -659,6 +786,7 @@ class ModernPhotoSorter(ctk.CTk):
 
     def start_new_event(self):
         """Force la création d'un nouveau dossier pour la photo actuelle même si un existe."""
+        if self.is_copying: return
         if self.idx >= len(self.photos): return
         self.is_renaming = False
         src_path = os.path.join(self.source_dir, self.photos[self.idx])
@@ -676,6 +804,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.entry_label.focus()
 
     def start_rename(self):
+        if self.is_copying: return
         target = self.current_target_folder or self.previewed_folder
         if not target: return
         
@@ -708,7 +837,9 @@ class ModernPhotoSorter(ctk.CTk):
         src_path, date_obj = self.temp_save_data
         
         folder_name = f"{date_obj.strftime('%Y-%m-%d')} {label_text}".strip()
-        target_folder = os.path.join(self.dest_dir, date_obj.strftime('%Y'), folder_name)
+        is_video = os.path.splitext(src_path)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
+        media_subfolder = "video" if is_video else "photo"
+        target_folder = os.path.join(self.dest_dir, media_subfolder, date_obj.strftime('%Y'), folder_name)
         os.makedirs(target_folder, exist_ok=True)
         
         self.finalize_save(src_path, target_folder)
@@ -799,6 +930,18 @@ class ModernPhotoSorter(ctk.CTk):
             messagebox.showerror("Erreur", f"Échec du renommage : {e}")
 
 
+    def set_ui_buttons_state(self, state):
+        self.btn_rotate.configure(state=state)
+        self.btn_trash.configure(state=state)
+        self.btn_save.configure(state=state)
+        self.btn_undo.configure(state="normal" if state == "normal" and self.history else "disabled")
+        self.btn_src.configure(state=state)
+        self.btn_dest.configure(state=state)
+        try:
+            self.btn_rename.configure(state=state)
+            self.btn_new_event.configure(state=state)
+        except: pass
+
     def finalize_save(self, src_path, target_folder):
         # Sécurité : On s'assure que le dossier cible existe bien
         try:
@@ -820,54 +963,76 @@ class ModernPhotoSorter(ctk.CTk):
             final_dest = os.path.join(target_folder, f"{name}_{counter}{ext}")
             counter += 1
             
-        try:
-            # OPTIMISATION v1.13.28 : Préservation de l'original si aucune transformation n'est requise.
-            # On n'utilise PIL que si une rotation est demandée ou si l'image doit être redressée (EXIF).
-            needs_transform = (self.rotation != 0)
-            if not needs_transform:
-                try:
-                    exif_dict = piexif.load(src_path)
-                    orientation = exif_dict.get("0th", {}).get(piexif.ImageIFD.Orientation, 1)
-                    if orientation != 1:
-                        needs_transform = True
-                except: pass
+        is_video = os.path.splitext(src_path)[1].lower() in ('.mov', '.mp4', '.avi', '.mkv', '.api')
 
-            if not needs_transform:
-                # Copie binaire parfaite (Checksum MD5, EXIF, Qualité et Dates préservés)
-                shutil.copy2(src_path, final_dest)
-            else:
-                # Transformation nécessaire (Re-encodage via PIL)
-                with Image.open(src_path) as img:
-                    img = ImageOps.exif_transpose(img)
-                    if self.rotation != 0: 
-                        img = img.rotate(self.rotation, expand=True)
-                    
-                    is_bmp = final_dest.lower().endswith('.bmp')
-                    if is_bmp:
-                        img.save(final_dest)
-                    else:
+        # Activer le verrou de copie et désactiver le UI
+        self.is_copying = True
+        self.set_ui_buttons_state("disabled")
+
+        if is_video:
+            self.lbl_scan_status.configure(text="⚡ Copie de la vidéo en cours...", text_color="#e67e22")
+            self.image_label.configure(text=f"⚡ Classement et copie de la vidéo en cours...\n\n{filename}\n\nVeuillez patienter...", image="")
+            self.image_label.image = None
+        else:
+            self.lbl_scan_status.configure(text="⚡ Enregistrement...", text_color="#e67e22")
+
+        def _background_copy():
+            try:
+                if is_video:
+                    shutil.copy2(src_path, final_dest)
+                else:
+                    # OPTIMISATION v1.13.28 : Préservation de l'original si aucune transformation n'est requise.
+                    needs_transform = (self.rotation != 0)
+                    if not needs_transform:
                         try:
                             exif_dict = piexif.load(src_path)
-                            if "0th" in exif_dict and piexif.ImageIFD.Orientation in exif_dict["0th"]:
-                                exif_dict["0th"][piexif.ImageIFD.Orientation] = 1 # Normalisation
+                            orientation = exif_dict.get("0th", {}).get(piexif.ImageIFD.Orientation, 1)
+                            if orientation != 1:
+                                needs_transform = True
+                        except: pass
+
+                    if not needs_transform:
+                        shutil.copy2(src_path, final_dest)
+                    else:
+                        with Image.open(src_path) as img:
+                            img = ImageOps.exif_transpose(img)
+                            if self.rotation != 0: 
+                                img = img.rotate(self.rotation, expand=True)
                             
-                            exif_bytes = piexif.dump(exif_dict)
-                            img.save(final_dest, quality=95, exif=exif_bytes)
-                        except: 
-                            img.save(final_dest, quality=95)
-        except Exception as e:
-            # Fallback ultime en cas de problème avec PIL ou l'accès fichier
-            try:
-                shutil.copy2(src_path, final_dest)
-            except Exception as copy_err:
-                messagebox.showerror("Erreur Fatale", f"Impossible de copier le fichier :\n{copy_err}")
-                return
+                            is_bmp = final_dest.lower().endswith('.bmp')
+                            if is_bmp:
+                                img.save(final_dest)
+                            else:
+                                try:
+                                    exif_dict = piexif.load(src_path)
+                                    if "0th" in exif_dict and piexif.ImageIFD.Orientation in exif_dict["0th"]:
+                                        exif_dict["0th"][piexif.ImageIFD.Orientation] = 1 # Normalisation
+                                    
+                                    exif_bytes = piexif.dump(exif_dict)
+                                    img.save(final_dest, quality=95, exif=exif_bytes)
+                                except: 
+                                    img.save(final_dest, quality=95)
+                
+                try:
+                    stat = os.stat(src_path)
+                    os.utime(final_dest, (stat.st_atime, stat.st_mtime))
+                except: pass
+                
+                self.after(0, lambda: self._on_copy_success(src_path, final_dest, filename))
+            except Exception as e:
+                # Fallback ultime en cas de problème
+                try:
+                    shutil.copy2(src_path, final_dest)
+                    self.after(0, lambda: self._on_copy_success(src_path, final_dest, filename))
+                except Exception as copy_err:
+                    self.after(0, lambda err=copy_err: self._on_copy_error(err))
 
+        threading.Thread(target=_background_copy, daemon=True).start()
 
-        try:
-            stat = os.stat(src_path)
-            os.utime(final_dest, (stat.st_atime, stat.st_mtime))
-        except: pass
+    def _on_copy_success(self, src_path, final_dest, filename):
+        self.is_copying = False
+        self.set_ui_buttons_state("normal")
+        self.lbl_scan_status.configure(text="✅ Classement effectué", text_color="#2ecc71")
         
         # Mémoriser dans l'index
         md5 = self.calculate_md5(final_dest)
@@ -884,9 +1049,20 @@ class ModernPhotoSorter(ctk.CTk):
             name, ext = os.path.splitext(filename)
             arch_path = os.path.join(archive_dir, f"{name}_{int(time.time())}{ext}")
             
-        shutil.move(src_path, arch_path)
-        self.history.append({"action": "save", "src": src_path, "dest": final_dest, "arch": arch_path})
+        try:
+            shutil.move(src_path, arch_path)
+            self.history.append({"action": "save", "src": src_path, "dest": final_dest, "arch": arch_path})
+        except Exception as e:
+            messagebox.showerror("Erreur Archivage", f"Impossible d'archiver le fichier original :\n{e}")
+            
         self.next_photo()
+
+    def _on_copy_error(self, err):
+        self.is_copying = False
+        self.set_ui_buttons_state("normal")
+        self.lbl_scan_status.configure(text="❌ Erreur de classement", text_color="#e74c3c")
+        messagebox.showerror("Erreur Fatale", f"Impossible de copier le fichier :\n{err}")
+        self.show_current()
 
     def finalize_trash(self, src_path):
         trash_dir = os.path.join(self.source_dir, "_corbeille_tri")
@@ -910,6 +1086,7 @@ class ModernPhotoSorter(ctk.CTk):
         self.show_current()
 
     def undo_last(self):
+        if self.is_copying: return
         if not self.history: return
         h = self.history.pop()
         try:
@@ -965,16 +1142,16 @@ class ModernPhotoSorter(ctk.CTk):
                     continue
                 for file in files:
                     ext = os.path.splitext(file)[1].lower()
-                    if ext in photo_ext:
+                    if ext in photo_ext or ext in video_ext:
                         # On stocke le chemin relatif
                         rel_path = os.path.relpath(os.path.join(root, file), p)
                         self.photos.append(rel_path)
-                    elif ext in video_ext:
-                        video_count += 1
+                        if ext in video_ext:
+                            video_count += 1
                     else:
                         other_count += 1
             
-            self.lbl_video_info.configure(text=f"🎥 {video_count} vidéos trouvées")
+            self.lbl_video_info.configure(text=f"🎥 {video_count} vidéos prêtes à trier")
             self.lbl_other_files_info.configure(text=f"📁 {other_count} fichiers restants (hors médias)")
             self.idx = 0
             self.update_ui_state()
@@ -1000,7 +1177,7 @@ class ModernPhotoSorter(ctk.CTk):
         t = len(self.photos)
         if t > 0:
             if self.idx >= t:
-                self.lbl_stats.configure(text=f"Fin / {t}")
+                self.lbl_stats.configure(text=f"{t} / {t}")
                 self.progress_bar.set(1.0)
             else:
                 self.lbl_stats.configure(text=f"{self.idx + 1} / {t}")
